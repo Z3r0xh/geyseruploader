@@ -1,14 +1,18 @@
 name: GeyserUpdater
 main: org.geyserupdater.spigot.SpigotGeyserUpdaterPlugin
-version: 1.0.0
+version: 1.0.3
 api-version: 1.19
-author: neha
+description: Auto-updater for GeyserMC and Floodgate
+authors: [neha, Z3r0xh]
 commands:
   geyserupdate:
-    description: Geyser/Floodgateの更新チェックを実行します
-    usage: /geyserupdate
+    description: Execute Geyser/Floodgate update check or reload config
+    usage: /geyserupdate [reload]
     permission: geyserupdater.admin
 permissions:
   geyserupdater.admin:
-    description: GeyserUpdaterの管理コマンドを実行できます
+    description: Can execute GeyserUpdater admin commands
+    default: op
+  geyserupdater.reload:
+    description: Can reload GeyserUpdater configuration
     default: op

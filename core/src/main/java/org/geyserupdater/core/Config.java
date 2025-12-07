@@ -1,10 +1,9 @@
 package org.geyserupdater.core;
 
-import java.util.List;
-import java.util.Map;
-
 public class Config {
     public boolean enabled = true;
+
+    public String language = "en";
 
     public boolean checkOnStartup = true;
 
@@ -37,17 +36,26 @@ public class Config {
     public Messages messages = new Messages();
     public static class Messages {
         public String prefix = "§a[GeyserUpdater]§r ";
-        public String checking = "更新を確認しています...";
-        public String upToDate = "{project} は最新です。";
-        public String updated = "{project} を最新ビルドに更新しました。";
-        public String noTarget = "更新対象のプロジェクトが有効化されていません。";
-        public String failed = "{project} の更新に失敗しました: {error}";
-        public String promptRestart = "更新が適用されました。サーバーの再起動が必要です。";
-        public String startUpCheck = "起動時の自動更新チェックを開始します。";
-        public String periodicCheck = "定期更新チェックをスケジュールしました（{hours}時間ごと）。";
-        public String adminLoginCheck = "権限保持者のログインを検知し、更新チェックを実行します。";
-        public String manualTriggered = "手動の更新チェックを開始します。";
-        public String nothingToDo = "有効な対象がありません。config.yml をご確認ください。";
-        public String done = "更新チェックが完了しました。";
+        public String checking = "Checking for updates...";
+        public String upToDate = "{project} is up to date.";
+        public String updated = "{project} has been updated to the latest build.";
+        public String noTarget = "No target projects are enabled.";
+        public String failed = "Failed to update {project}: {error}";
+        public String promptRestart = "Update applied. Server restart required.";
+        public String startUpCheck = "Starting automatic update check on startup.";
+        public String periodicCheck = "Scheduled periodic update check (every {hours} hours).";
+        public String adminLoginCheck = "Admin login detected, executing update check.";
+        public String manualTriggered = "Starting manual update check.";
+        public String nothingToDo = "No valid targets. Please check config.yml.";
+        public String done = "Update check completed.";
+        public String noPermission = "You do not have permission.";
+        public String pluginDisabled = "[GeyserUpdater] disabled by config";
+        public String downloadFailed = "Download failed: {error}";
+        public String hashComparisonFailed = "Hash comparison failed. Continuing with overwrite update: {error}";
+        public String migrationFailed = "Failed to move {file}: {error}";
+        public String migrationScanFailed = "Migration scan failed: {error}";
+        public String dataDirectoryError = "Could not create data directory: {error}";
+        public String reloadSuccess = "Configuration reloaded successfully.";
+        public String reloadFailed = "Failed to reload configuration: {error}";
     }
 }

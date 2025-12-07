@@ -29,14 +29,14 @@ public class BungeeGeyserUpdaterPlugin extends Plugin implements Listener {
         this.cfgMgr = new ConfigManager(getDataFolder().toPath());
         this.cfg = cfgMgr.loadOrCreateDefault();
 
-        // マイグレーションを実行
+        // Execute migration
         migrateNestedPluginsIfNeeded(getDataFolder().toPath().getParent());
 
         getProxy().getPluginManager().registerListener(this, this);
         getProxy().getPluginManager().registerCommand(this, new UpdateCommand());
 
         if (!cfg.enabled) {
-            getLogger().info("[GeyserUpdater] disabled by config");
+            getLogger().info(cfg.messages.pluginDisabled);
             return;
         }
 
@@ -61,7 +61,7 @@ public class BungeeGeyserUpdaterPlugin extends Plugin implements Listener {
             } else {
                 info(cfg.messages.checking);
             }
-            Path pluginsDir = getDataFolder().toPath().getParent(); // これが plugins 直下
+            Path pluginsDir = getDataFolder().toPath().getParent(); // This is directly under plugins
             List<UpdaterService.UpdateOutcome> results = service.checkAndUpdate(Platform.BUNGEECORD, pluginsDir);
 
             boolean anyUpdated = false;
@@ -91,6 +91,21 @@ public class BungeeGeyserUpdaterPlugin extends Plugin implements Listener {
 
         @Override
         public void execute(CommandSender sender, String[] args) {
+            // Check for reload subcommand
+            if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
+                if (!sender.hasPermission("geyserupdater.reload")) {
+                    sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
+                    return;
+                }
+                try {
+                    cfg = cfgMgr.loadOrCreateDefault();
+                    sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.reloadSuccess));
+                } catch (Exception e) {
+                    sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.reloadFailed.replace("{error}", e.getMessage())));
+                }
+                return;
+            }
+
             runAsyncCheck(true, sender);
         }
     }
@@ -147,7 +162,9 @@ public class BungeeGeyserUpdaterPlugin extends Plugin implements Listener {
 
                     } catch (Exception ex) {
 
-                        getLogger().warning("Failed to move " + p + " : " + ex.getMessage());
+                        getLogger().warning(cfg.messages.migrationFailed
+                            .replace("{file}", p.toString())
+                            .replace("{error}", ex.getMessage()));
 
                     }
 
@@ -155,7 +172,7 @@ public class BungeeGeyserUpdaterPlugin extends Plugin implements Listener {
 
             } catch (Exception ex) {
 
-                getLogger().warning("Migration scan failed: " + ex.getMessage());
+                getLogger().warning(cfg.messages.migrationScanFailed.replace("{error}", ex.getMessage()));
 
             }
 

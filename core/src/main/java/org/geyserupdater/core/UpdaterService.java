@@ -72,7 +72,8 @@ public class UpdaterService {
             try {
                 downloadTo(downloadUrl, tmp);
             } catch (IOException e) {
-                return new UpdateOutcome(project, false, false, Optional.of("Download failed: " + e.getMessage()));
+                return new UpdateOutcome(project, false, false,
+                    Optional.of(cfg.messages.downloadFailed.replace("{error}", e.getMessage())));
             }
 
             // If existing file exists, compare hashes
@@ -86,7 +87,7 @@ public class UpdaterService {
                     }
                 } catch (IOException e) {
                     // proceed to overwrite if cannot hash
-                    log.warn("ハッシュ比較に失敗しました。上書き更新を継続します: " + e.getMessage());
+                    log.warn(cfg.messages.hashComparisonFailed.replace("{error}", e.getMessage()));
                 }
             }
 
