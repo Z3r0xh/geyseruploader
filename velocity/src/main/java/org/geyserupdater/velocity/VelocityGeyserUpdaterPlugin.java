@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 @Plugin(
         id = "geyserupdater",
         name = "GeyserUpdater",
-        version = "1.0.1",
+        version = "1.0.2",
         description = "Auto-updater for GeyserMC and Floodgate"
 )
 public class VelocityGeyserUpdaterPlugin {
@@ -46,25 +46,26 @@ public class VelocityGeyserUpdaterPlugin {
         try {
             java.nio.file.Files.createDirectories(dataDir);
         } catch (Exception ex) {
+            // Note: cfg not loaded yet, so we can't use cfg.messages here
             logger.severe("Could not create data directory: " + ex.getMessage());
         }
         this.cfgMgr = new ConfigManager(dataDir);
         this.cfg = cfgMgr.loadOrCreateDefault();
 
-        // マイグレーションを実行
+        // Execute migration
         migrateNestedPluginsIfNeeded(dataDir.getParent());
 
-        // コマンド登録
+        // Register command
         proxy.getCommandManager().register(
                 proxy.getCommandManager().metaBuilder("geyserupdate").build(),
                 new UpdateCommand()
         );
 
-        // 注意: メインインスタンスは自動でイベント登録されるため、明示的な register は不要
-        // 例: proxy.getEventManager().register(this, this); は呼び出さない
+        // Note: Main instance is automatically registered for events, explicit register not needed
+        // Example: do not call proxy.getEventManager().register(this, this);
 
         if (!cfg.enabled) {
-            logger.info("[GeyserUpdater] disabled by config");
+            logger.info(cfg.messages.pluginDisabled);
             return;
         }
 
@@ -89,7 +90,7 @@ public class VelocityGeyserUpdaterPlugin {
             } else {
                 logger.info(cfg.messages.checking);
             }
-            Path pluginsDir = dataDir.getParent(); // これが plugins 直下
+            Path pluginsDir = dataDir.getParent(); // This is directly under plugins
             List<UpdaterService.UpdateOutcome> results = service.checkAndUpdate(Platform.VELOCITY, pluginsDir);
 
             boolean anyUpdated = false;
@@ -118,7 +119,7 @@ public class VelocityGeyserUpdaterPlugin {
         public void execute(Invocation invocation) {
             CommandSource src = invocation.source();
             if (!src.hasPermission("geyserupdater.admin")) {
-                send(src, cfg.messages.prefix + "権限がありません。");
+                send(src, cfg.messages.prefix + cfg.messages.noPermission);
                 return;
             }
             runAsyncCheck(true, src);
@@ -161,11 +162,13 @@ public class VelocityGeyserUpdaterPlugin {
                     java.nio.file.Path dest = correctPluginsDir.resolve(p.getFileName().toString());
                     java.nio.file.Files.move(p, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 } catch (Exception ex) {
-                    logger.warning("Failed to move " + p + " : " + ex.getMessage());
+                    logger.warning(cfg.messages.migrationFailed
+                        .replace("{file}", p.toString())
+                        .replace("{error}", ex.getMessage()));
                 }
             });
         } catch (Exception ex) {
-            logger.warning("Migration scan failed: " + ex.getMessage());
+            logger.warning(cfg.messages.migrationScanFailed.replace("{error}", ex.getMessage()));
         }
     }
 

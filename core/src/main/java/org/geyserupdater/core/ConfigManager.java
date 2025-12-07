@@ -21,12 +21,11 @@ public class ConfigManager {
         this.configPath = dataFolder.resolve("config.yml");
     }
 
-    @SuppressWarnings("unchecked")
     public Config loadOrCreateDefault() {
         try {
             if (!Files.exists(dataFolder)) Files.createDirectories(dataFolder);
             if (!Files.exists(configPath)) {
-                // 初回は resources/config.yml をコピー（型タグなし）
+                // First time: copy resources/config.yml (without type tags)
                 try (InputStream in = ConfigManager.class.getClassLoader().getResourceAsStream("config.yml")) {
                     if (in != null) {
                         Files.copy(in, configPath);
@@ -37,7 +36,7 @@ public class ConfigManager {
             }
 
             String content = Files.readString(configPath, StandardCharsets.UTF_8);
-            // 旧版で先頭に型タグが入っていた場合は除去
+            // Remove type tag if present from old version
             if (content.startsWith("!!org.geyserupdater.core.Config")) {
                 int idx = content.indexOf('\n');
                 content = (idx >= 0) ? content.substring(idx + 1) : "";
@@ -50,11 +49,12 @@ public class ConfigManager {
             Object obj = yaml.load(content);
             Config cfg = new Config();
             if (!(obj instanceof Map<?, ?> map)) {
-                return cfg; // 既定値
+                return cfg; // default values
             }
 
-            // 1階層
+            // Level 1
             cfg.enabled = asBool(map, "enabled", cfg.enabled);
+            cfg.language = asStr(map, "language", cfg.language);
             cfg.checkOnStartup = asBool(map, "checkOnStartup", cfg.checkOnStartup);
 
             // periodic
@@ -79,21 +79,8 @@ public class ConfigManager {
             cfg.postUpdate.runRestartCommand = asBool(postUpdate, "runRestartCommand", cfg.postUpdate.runRestartCommand);
             cfg.postUpdate.restartCommand = asStr(postUpdate, "restartCommand", cfg.postUpdate.restartCommand);
 
-            // messages
-            Map<String, Object> messages = asMap(map, "messages");
-            cfg.messages.prefix = asStr(messages, "prefix", cfg.messages.prefix);
-            cfg.messages.checking = asStr(messages, "checking", cfg.messages.checking);
-            cfg.messages.upToDate = asStr(messages, "upToDate", cfg.messages.upToDate);
-            cfg.messages.updated = asStr(messages, "updated", cfg.messages.updated);
-            cfg.messages.noTarget = asStr(messages, "noTarget", cfg.messages.noTarget);
-            cfg.messages.failed = asStr(messages, "failed", cfg.messages.failed);
-            cfg.messages.promptRestart = asStr(messages, "promptRestart", cfg.messages.promptRestart);
-            cfg.messages.startUpCheck = asStr(messages, "startUpCheck", cfg.messages.startUpCheck);
-            cfg.messages.periodicCheck = asStr(messages, "periodicCheck", cfg.messages.periodicCheck);
-            cfg.messages.adminLoginCheck = asStr(messages, "adminLoginCheck", cfg.messages.adminLoginCheck);
-            cfg.messages.manualTriggered = asStr(messages, "manualTriggered", cfg.messages.manualTriggered);
-            cfg.messages.nothingToDo = asStr(messages, "nothingToDo", cfg.messages.nothingToDo);
-            cfg.messages.done = asStr(messages, "done", cfg.messages.done);
+            // Load messages from language file
+            loadMessages(cfg);
 
             return cfg;
         } catch (IOException e) {
@@ -105,7 +92,7 @@ public class ConfigManager {
     private static Map<String, Object> asMap(Map<?, ?> map, String key) {
         Object o = map.get(key);
         if (o instanceof Map<?, ?> m) {
-            // Unsafe キャストを許容（YAML上は String キー想定）
+            // Allow unsafe cast (YAML is assumed to have String keys)
             return (Map<String, Object>) (Map<?, ?>) m;
         }
         return Collections.emptyMap();
@@ -132,5 +119,56 @@ public class ConfigManager {
 
     public Path getConfigPath() {
         return configPath;
+    }
+
+    private void loadMessages(Config cfg) {
+        String languageFile = "messages_" + cfg.language + ".yml";
+
+        try (InputStream in = ConfigManager.class.getClassLoader().getResourceAsStream(languageFile)) {
+            if (in == null) {
+                // Fallback to English if language file not found
+                try (InputStream fallback = ConfigManager.class.getClassLoader().getResourceAsStream("messages_en.yml")) {
+                    if (fallback != null) {
+                        loadMessagesFromStream(fallback, cfg);
+                    }
+                }
+                return;
+            }
+            loadMessagesFromStream(in, cfg);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadMessagesFromStream(InputStream in, Config cfg) throws IOException {
+        String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        LoaderOptions options = new LoaderOptions();
+        Yaml yaml = new Yaml(new SafeConstructor(options));
+
+        Object obj = yaml.load(content);
+        if (!(obj instanceof Map<?, ?> map)) {
+            return;
+        }
+
+        cfg.messages.prefix = asStr(map, "prefix", cfg.messages.prefix);
+        cfg.messages.checking = asStr(map, "checking", cfg.messages.checking);
+        cfg.messages.upToDate = asStr(map, "upToDate", cfg.messages.upToDate);
+        cfg.messages.updated = asStr(map, "updated", cfg.messages.updated);
+        cfg.messages.noTarget = asStr(map, "noTarget", cfg.messages.noTarget);
+        cfg.messages.failed = asStr(map, "failed", cfg.messages.failed);
+        cfg.messages.promptRestart = asStr(map, "promptRestart", cfg.messages.promptRestart);
+        cfg.messages.startUpCheck = asStr(map, "startUpCheck", cfg.messages.startUpCheck);
+        cfg.messages.periodicCheck = asStr(map, "periodicCheck", cfg.messages.periodicCheck);
+        cfg.messages.adminLoginCheck = asStr(map, "adminLoginCheck", cfg.messages.adminLoginCheck);
+        cfg.messages.manualTriggered = asStr(map, "manualTriggered", cfg.messages.manualTriggered);
+        cfg.messages.nothingToDo = asStr(map, "nothingToDo", cfg.messages.nothingToDo);
+        cfg.messages.done = asStr(map, "done", cfg.messages.done);
+        cfg.messages.noPermission = asStr(map, "noPermission", cfg.messages.noPermission);
+        cfg.messages.pluginDisabled = asStr(map, "pluginDisabled", cfg.messages.pluginDisabled);
+        cfg.messages.downloadFailed = asStr(map, "downloadFailed", cfg.messages.downloadFailed);
+        cfg.messages.hashComparisonFailed = asStr(map, "hashComparisonFailed", cfg.messages.hashComparisonFailed);
+        cfg.messages.migrationFailed = asStr(map, "migrationFailed", cfg.messages.migrationFailed);
+        cfg.messages.migrationScanFailed = asStr(map, "migrationScanFailed", cfg.messages.migrationScanFailed);
+        cfg.messages.dataDirectoryError = asStr(map, "dataDirectoryError", cfg.messages.dataDirectoryError);
     }
 }

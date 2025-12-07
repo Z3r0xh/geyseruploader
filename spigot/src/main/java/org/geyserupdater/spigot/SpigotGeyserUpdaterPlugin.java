@@ -28,13 +28,13 @@ public class SpigotGeyserUpdaterPlugin extends JavaPlugin implements Listener {
         this.cfgMgr = new ConfigManager(getDataFolder().toPath());
         this.cfg = cfgMgr.loadOrCreateDefault();
 
-        // マイグレーションを実行
+        // Execute migration
         migrateNestedPluginsIfNeeded(getDataFolder().toPath().getParent());
 
         getServer().getPluginManager().registerEvents(this, this);
 
         if (!cfg.enabled) {
-            getLogger().info("[GeyserUpdater] disabled by config");
+            getLogger().info(cfg.messages.pluginDisabled);
             return;
         }
 
@@ -67,7 +67,7 @@ public class SpigotGeyserUpdaterPlugin extends JavaPlugin implements Listener {
             } else {
                 info(cfg.messages.checking);
             }
-            Path pluginsDir = getDataFolder().toPath().getParent(); // これが plugins 直下
+            Path pluginsDir = getDataFolder().toPath().getParent(); // This is directly under plugins
             List<UpdaterService.UpdateOutcome> results =
                     service.checkAndUpdate(Platform.SPIGOT, pluginsDir);
 
@@ -127,7 +127,7 @@ public class SpigotGeyserUpdaterPlugin extends JavaPlugin implements Listener {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!command.getName().equalsIgnoreCase("geyserupdate")) return false;
         if (!sender.hasPermission("geyserupdater.admin")) {
-            sender.sendMessage(cfg.messages.prefix + "権限がありません。");
+            sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
             return true;
         }
                 runAsyncCheck(true, sender);
@@ -146,11 +146,13 @@ public class SpigotGeyserUpdaterPlugin extends JavaPlugin implements Listener {
                             java.nio.file.Path dest = correctPluginsDir.resolve(p.getFileName().toString());
                             java.nio.file.Files.move(p, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                         } catch (Exception ex) {
-                            getLogger().warning("Failed to move " + p + " : " + ex.getMessage());
+                            getLogger().warning(cfg.messages.migrationFailed
+                                .replace("{file}", p.toString())
+                                .replace("{error}", ex.getMessage()));
                         }
                     });
                 } catch (Exception ex) {
-                    getLogger().warning("Migration scan failed: " + ex.getMessage());
+                    getLogger().warning(cfg.messages.migrationScanFailed.replace("{error}", ex.getMessage()));
                 }
             }
         

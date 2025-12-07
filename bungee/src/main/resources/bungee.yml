@@ -1,11 +1,12 @@
 name: GeyserUpdater
 main: org.geyserupdater.bungee.BungeeGeyserUpdaterPlugin
-version: 1.0.0
-author: neha
+version: 1.0.2
+description: Auto-updater for GeyserMC and Floodgate
+authors: [neha, Z3r0xh]
 commands:
   geyserupdate:
-    description: Geyser/Floodgateの更新チェックを実行します
+    description: Execute Geyser/Floodgate update check
 permissions:
   geyserupdater.admin:
-    description: GeyserUpdaterの管理コマンドを実行できます
+    description: Can execute GeyserUpdater admin commands
     default: false
