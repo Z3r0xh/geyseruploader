@@ -12,6 +12,7 @@ adminLogin:
 targets:
   geyser: true
   floodgate: true
+  luckperms: true
 postUpdate:
   notifyConsole: true
   notifyPlayersWithPermission: true

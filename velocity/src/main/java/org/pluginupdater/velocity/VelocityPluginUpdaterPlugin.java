@@ -35,7 +35,7 @@ public class VelocityPluginUpdaterPlugin {
     private Config cfg;
 
     @Inject
-    public VelocityGeyserUpdaterPlugin(ProxyServer proxy, Logger logger, @DataDirectory Path dataDir) {
+    public VelocityPluginUpdaterPlugin(ProxyServer proxy, Logger logger, @DataDirectory Path dataDir) {
         this.proxy = proxy;
         this.logger = logger;
         this.dataDir = dataDir;
