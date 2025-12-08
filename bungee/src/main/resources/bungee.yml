@@ -1,15 +1,15 @@
-name: GeyserUpdater
-main: org.geyserupdater.bungee.BungeeGeyserUpdaterPlugin
-version: 1.0.3
-description: Auto-updater for GeyserMC and Floodgate
+name: PluginUpdater
+main: org.pluginupdater.bungee.BungeePluginUpdaterPlugin
+version: 1.0.0
+description: Auto-updater for Geyser, Floodgate and other plugins
 authors: [neha, Z3r0xh]
 commands:
-  geyserupdate:
-    description: Execute Geyser/Floodgate update check or reload config
+  pluginupdate-bungee:
+    description: Execute plugin update check or reload config
 permissions:
-  geyserupdater.admin:
-    description: Can execute GeyserUpdater admin commands
+  pluginupdater.admin:
+    description: Can execute PluginUpdater admin commands
     default: false
-  geyserupdater.reload:
-    description: Can reload GeyserUpdater configuration
+  pluginupdater.reload:
+    description: Can reload PluginUpdater configuration
     default: false

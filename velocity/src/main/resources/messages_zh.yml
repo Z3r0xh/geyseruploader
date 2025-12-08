@@ -1,5 +1,5 @@
-# Chinese (zh) - GeyserUpdater Messages
-prefix: "§a[GeyserUpdater]§r "
+# Chinese (zh) - PluginUpdater Messages
+prefix: "§a[PluginUpdater]§r "
 checking: "正在检查更新..."
 upToDate: "{project} 已是最新版本。"
 updated: "{project} 已更新至最新构建版本。"
@@ -13,7 +13,7 @@ manualTriggered: "开始手动更新检查。"
 nothingToDo: "没有有效的目标。请检查 config.yml。"
 done: "更新检查已完成。"
 noPermission: "您没有权限。"
-pluginDisabled: "[GeyserUpdater] 已被配置禁用"
+pluginDisabled: "[PluginUpdater] 已被配置禁用"
 downloadFailed: "下载失败: {error}"
 hashComparisonFailed: "哈希比较失败。继续覆盖更新: {error}"
 migrationFailed: "移动 {file} 失败: {error}"

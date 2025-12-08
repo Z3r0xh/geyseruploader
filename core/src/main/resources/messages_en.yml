@@ -1,5 +1,5 @@
-# English (en) - GeyserUpdater Messages
-prefix: "§a[GeyserUpdater]§r "
+# English (en) - PluginUpdater Messages
+prefix: "§a[PluginUpdater]§r "
 checking: "Checking for updates..."
 upToDate: "{project} is up to date."
 updated: "{project} has been updated to the latest build."
@@ -13,7 +13,7 @@ manualTriggered: "Starting manual update check."
 nothingToDo: "No valid targets. Please check config.yml."
 done: "Update check completed."
 noPermission: "You do not have permission."
-pluginDisabled: "[GeyserUpdater] disabled by config"
+pluginDisabled: "[PluginUpdater] disabled by config"
 downloadFailed: "Download failed: {error}"
 hashComparisonFailed: "Hash comparison failed. Continuing with overwrite update: {error}"
 migrationFailed: "Failed to move {file}: {error}"

@@ -1,5 +1,5 @@
-# French (fr) - GeyserUpdater Messages
-prefix: "§a[GeyserUpdater]§r "
+# French (fr) - PluginUpdater Messages
+prefix: "§a[PluginUpdater]§r "
 checking: "Vérification des mises à jour..."
 upToDate: "{project} est à jour."
 updated: "{project} a été mis à jour vers la dernière version."
@@ -13,7 +13,7 @@ manualTriggered: "Démarrage de la vérification manuelle des mises à jour."
 nothingToDo: "Aucune cible valide. Veuillez vérifier config.yml."
 done: "Vérification des mises à jour terminée."
 noPermission: "Vous n'avez pas la permission."
-pluginDisabled: "[GeyserUpdater] désactivé par la configuration"
+pluginDisabled: "[PluginUpdater] désactivé par la configuration"
 downloadFailed: "Échec du téléchargement: {error}"
 hashComparisonFailed: "La comparaison de hachage a échoué. Poursuite avec mise à jour par écrasement: {error}"
 migrationFailed: "Échec du déplacement de {file}: {error}"

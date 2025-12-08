@@ -1,5 +1,5 @@
-# Japanese (ja) - GeyserUpdater Messages
-prefix: "§a[GeyserUpdater]§r "
+# Japanese (ja) - PluginUpdater Messages
+prefix: "§a[PluginUpdater]§r "
 checking: "アップデートを確認中..."
 upToDate: "{project}は最新です。"
 updated: "{project}は最新ビルドに更新されました。"
@@ -13,7 +13,7 @@ manualTriggered: "手動更新チェックを開始します。"
 nothingToDo: "有効なターゲットがありません。config.ymlを確認してください。"
 done: "更新チェックが完了しました。"
 noPermission: "権限がありません。"
-pluginDisabled: "[GeyserUpdater]は設定により無効化されています"
+pluginDisabled: "[PluginUpdater]は設定により無効化されています"
 downloadFailed: "ダウンロードに失敗しました: {error}"
 hashComparisonFailed: "ハッシュ比較に失敗しました。上書き更新を続行します: {error}"
 migrationFailed: "{file}の移動に失敗しました: {error}"
