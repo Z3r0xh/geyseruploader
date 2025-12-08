@@ -2,7 +2,7 @@ package org.geyserupdater.core;
 
 public enum Platform {
     SPIGOT("spigot"),
-    BUNGEECORD("bungee"),
+    BUNGEECORD("bungeecord"),
     VELOCITY("velocity");
 
     private final String apiName;
