@@ -9,16 +9,19 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.Map;
 
 public class ConfigManager {
     private final Path dataFolder;
     private final Path configPath;
+    private final Path messagesFolder;
 
     public ConfigManager(Path dataFolder) {
         this.dataFolder = dataFolder;
         this.configPath = dataFolder.resolve("config.yml");
+        this.messagesFolder = dataFolder.resolve("messages");
     }
 
     public Config loadOrCreateDefault() {
@@ -122,26 +125,65 @@ public class ConfigManager {
     }
 
     private void loadMessages(Config cfg) {
-        String languageFile = "messages_" + cfg.language + ".yml";
+        try {
+            // Create messages folder if it doesn't exist
+            if (!Files.exists(messagesFolder)) {
+                Files.createDirectories(messagesFolder);
+                // Copy all default language files from resources
+                copyDefaultLanguageFiles();
+            }
 
-        try (InputStream in = ConfigManager.class.getClassLoader().getResourceAsStream(languageFile)) {
-            if (in == null) {
-                // Fallback to English if language file not found
-                try (InputStream fallback = ConfigManager.class.getClassLoader().getResourceAsStream("messages_en.yml")) {
-                    if (fallback != null) {
-                        loadMessagesFromStream(fallback, cfg);
+            String languageFile = "messages_" + cfg.language + ".yml";
+            Path externalFile = messagesFolder.resolve(languageFile);
+
+            // If the specific language file doesn't exist externally, try to copy it from resources
+            if (!Files.exists(externalFile)) {
+                copyLanguageFileFromResources(languageFile);
+            }
+
+            // Load from external file if it exists
+            if (Files.exists(externalFile)) {
+                String content = Files.readString(externalFile, StandardCharsets.UTF_8);
+                loadMessagesFromString(content, cfg);
+            } else {
+                // Fallback to English from external or resources
+                Path englishFile = messagesFolder.resolve("messages_en.yml");
+                if (Files.exists(englishFile)) {
+                    String content = Files.readString(englishFile, StandardCharsets.UTF_8);
+                    loadMessagesFromString(content, cfg);
+                } else {
+                    // Last resort: load from resources
+                    try (InputStream fallback = ConfigManager.class.getClassLoader().getResourceAsStream("messages_en.yml")) {
+                        if (fallback != null) {
+                            loadMessagesFromStream(fallback, cfg);
+                        }
                     }
                 }
-                return;
             }
-            loadMessagesFromStream(in, cfg);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void loadMessagesFromStream(InputStream in, Config cfg) throws IOException {
-        String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+    private void copyDefaultLanguageFiles() {
+        String[] languages = {"en", "es", "fr", "de", "ja", "zh"};
+        for (String lang : languages) {
+            copyLanguageFileFromResources("messages_" + lang + ".yml");
+        }
+    }
+
+    private void copyLanguageFileFromResources(String fileName) {
+        try (InputStream in = ConfigManager.class.getClassLoader().getResourceAsStream(fileName)) {
+            if (in != null) {
+                Path destination = messagesFolder.resolve(fileName);
+                Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            // Silently fail if resource doesn't exist or cannot be copied
+        }
+    }
+
+    private void loadMessagesFromString(String content, Config cfg) {
         LoaderOptions options = new LoaderOptions();
         Yaml yaml = new Yaml(new SafeConstructor(options));
 
@@ -150,6 +192,15 @@ public class ConfigManager {
             return;
         }
 
+        applyMessagesFromMap(map, cfg);
+    }
+
+    private void loadMessagesFromStream(InputStream in, Config cfg) throws IOException {
+        String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        loadMessagesFromString(content, cfg);
+    }
+
+    private void applyMessagesFromMap(Map<?, ?> map, Config cfg) {
         cfg.messages.prefix = asStr(map, "prefix", cfg.messages.prefix);
         cfg.messages.checking = asStr(map, "checking", cfg.messages.checking);
         cfg.messages.upToDate = asStr(map, "upToDate", cfg.messages.upToDate);
