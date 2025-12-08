@@ -23,6 +23,7 @@ public class Config {
     public static class Targets {
         public boolean geyser = true;
         public boolean floodgate = true;
+        public boolean luckperms = false;  // Default false, opt-in
     }
 
     public PostUpdate postUpdate = new PostUpdate();

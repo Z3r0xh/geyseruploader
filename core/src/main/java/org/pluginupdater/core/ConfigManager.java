@@ -74,6 +74,7 @@ public class ConfigManager {
             Map<String, Object> targets = asMap(map, "targets");
             cfg.targets.geyser = asBool(targets, "geyser", cfg.targets.geyser);
             cfg.targets.floodgate = asBool(targets, "floodgate", cfg.targets.floodgate);
+            cfg.targets.luckperms = asBool(targets, "luckperms", cfg.targets.luckperms);
 
             // postUpdate
             Map<String, Object> postUpdate = asMap(map, "postUpdate");

@@ -150,7 +150,7 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
 
                     String name = p.getFileName().toString().toLowerCase();
 
-                    return name.endsWith(".jar") && (name.contains("geyser") || name.contains("floodgate"));
+                    return name.endsWith(".jar") && (name.contains("geyser") || name.contains("floodgate") || name.contains("luckperms"));
 
                 }).forEach(p -> {
 

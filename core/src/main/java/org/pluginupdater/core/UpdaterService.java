@@ -15,7 +15,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class UpdaterService {
-    private static final String BASE = "https://download.geysermc.org/v2/projects";
+    private static final String GEYSER_BASE = "https://download.geysermc.org/v2/projects";
+    private static final String LUCKPERMS_API = "https://metadata.luckperms.net/data/downloads";
     private final HttpClient http;
     private final LogAdapter log;
     private final Config cfg;
@@ -60,13 +61,14 @@ public class UpdaterService {
         List<Project> targets = new ArrayList<>();
         if (cfg.targets.geyser) targets.add(Project.GEYSER);
         if (cfg.targets.floodgate) targets.add(Project.FLOODGATE);
+        if (cfg.targets.luckperms) targets.add(Project.LUCKPERMS);
         return targets;
     }
 
     private UpdateOutcome updateOne(Project project, Platform platform, Path pluginsDir) {
         try {
             Path existing = findExistingJar(project, pluginsDir);
-            String downloadUrl = BASE + "/" + project.apiName() + "/versions/latest/builds/latest/downloads/" + platform.apiName();
+            String downloadUrl = buildDownloadUrl(project, platform);
 
             Path tmp = Files.createTempFile("geyserupdater-" + project.apiName(), ".jar");
             try {
@@ -99,6 +101,71 @@ public class UpdaterService {
             return new UpdateOutcome(project, true, false, Optional.empty());
         } catch (Exception ex) {
             return new UpdateOutcome(project, false, false, Optional.of(ex.getMessage()));
+        }
+    }
+
+    private String buildDownloadUrl(Project project, Platform platform) throws IOException {
+        if (project.isLuckPerms()) {
+            return getLuckPermsDownloadUrl(platform);
+        } else {
+            // GeyserMC API (Geyser & Floodgate)
+            return GEYSER_BASE + "/" + project.apiName() + "/versions/latest/builds/latest/downloads/" + platform.apiName();
+        }
+    }
+
+    private String getLuckPermsDownloadUrl(Platform platform) throws IOException {
+        // Fetch the LuckPerms metadata API to get download URLs
+        HttpRequest req = HttpRequest.newBuilder(URI.create(LUCKPERMS_API))
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String body = resp.body();
+                // Parse JSON to extract the correct platform URL
+                return extractLuckPermsUrl(body, platform);
+            } else {
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching LuckPerms metadata");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    private String extractLuckPermsUrl(String json, Platform platform) throws IOException {
+        // Simple JSON parsing for the downloads object
+        // Expected format: {"downloads":{"bukkit":"url","bungee":"url","velocity":"url"}}
+        String platformKey = mapPlatformToLuckPerms(platform);
+
+        // Find the platform key in JSON
+        String searchKey = "\"" + platformKey + "\":\"";
+        int startIndex = json.indexOf(searchKey);
+        if (startIndex == -1) {
+            throw new IOException("Platform " + platformKey + " not found in LuckPerms downloads");
+        }
+
+        startIndex += searchKey.length();
+        int endIndex = json.indexOf("\"", startIndex);
+        if (endIndex == -1) {
+            throw new IOException("Invalid JSON format for LuckPerms downloads");
+        }
+
+        return json.substring(startIndex, endIndex);
+    }
+
+    private String mapPlatformToLuckPerms(Platform platform) {
+        // Map our platform names to LuckPerms platform names
+        switch (platform) {
+            case SPIGOT:
+                return "bukkit";  // LuckPerms uses "bukkit" for Spigot/Paper
+            case BUNGEECORD:
+                return "bungee";
+            case VELOCITY:
+                return "velocity";
+            default:
+                return platform.apiName();
         }
     }
 
@@ -161,6 +228,14 @@ public class UpdaterService {
                     case BUNGEECORD: filename = "floodgate-bungee.jar"; break;
                     case VELOCITY: filename = "floodgate-velocity.jar"; break;
                     default: filename = "floodgate.jar";
+                }
+                break;
+            case LUCKPERMS:
+                switch (platform) {
+                    case SPIGOT: filename = "LuckPerms-Bukkit.jar"; break;
+                    case BUNGEECORD: filename = "LuckPerms-Bungee.jar"; break;
+                    case VELOCITY: filename = "LuckPerms-Velocity.jar"; break;
+                    default: filename = "LuckPerms.jar";
                 }
                 break;
             default:

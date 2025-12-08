@@ -173,7 +173,7 @@ public class VelocityPluginUpdaterPlugin {
         try (java.util.stream.Stream<java.nio.file.Path> s = java.nio.file.Files.list(nested)) {
             s.filter(p -> {
                 String name = p.getFileName().toString().toLowerCase();
-                return name.endsWith(".jar") && (name.contains("geyser") || name.contains("floodgate"));
+                return name.endsWith(".jar") && (name.contains("geyser") || name.contains("floodgate") || name.contains("luckperms"));
             }).forEach(p -> {
                 try {
                     java.nio.file.Path dest = correctPluginsDir.resolve(p.getFileName().toString());
