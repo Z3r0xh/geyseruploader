@@ -10,9 +10,11 @@ public enum Project {
     VIABACKWARDS("viabackwards", "ViaBackwards"),
     VIAREWIND("viarewind", "ViaRewind"),
     VIAREWIND_LEGACY("viarewind-legacy", "ViaRewind-Legacy-Support"),
+    FAWE("fawe", "FastAsyncWorldEdit"),
+    PLACEHOLDERAPI("placeholderapi", "PlaceholderAPI"),
     // Geyser Extensions (go in Geyser-{Platform}/extensions/)
     GEYSERUTILS_EXTENSION("geyserutils-extension", "geyserutils-geyser"),
-    GEYSERMODELENGINE_EXTENSION("geysermodelengine-extension", "GeyserModelEngine"),
+    GEYSERMODELENGINE_EXTENSION("geysermodelengine-extension", "GeyserModelEnginePackGenerator"),
     // Geyser-related Plugins (go in plugins/)
     GEYSERUTILS_PLUGIN("geyserutils-plugin", "geyserutils"),
     GEYSERMODELENGINE_PLUGIN("geysermodelengine-plugin", "GeyserModelEngine");

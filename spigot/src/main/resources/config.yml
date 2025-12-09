@@ -15,6 +15,8 @@ targets:
   geyser: false
   floodgate: false
   luckperms: false
+  fawe: false  # FastAsyncWorldEdit (Spigot only)
+  placeholderapi: false  # PlaceholderAPI (Spigot only)
   packetevents:
     enabled: false
     useDevBuilds: false  # false = stable releases from GitHub, true = dev builds from Jenkins
@@ -28,7 +30,8 @@ targets:
     viaRewindLegacy: false
   geyserExtensions:
     geyserUtils: false  # Downloads extension + plugin for all platforms
-    geyserModelEngine: false  # Downloads extension + plugin (Spigot only)
+    geyserModelEnginePackGenerator: false  # Downloads GeyserModelEnginePackGenerator extension (all platforms)
+    geyserModelEngine: false  # Downloads GeyserModelEngine plugin (Spigot only)
 postUpdate:
   notifyConsole: true
   notifyPlayersWithPermission: true

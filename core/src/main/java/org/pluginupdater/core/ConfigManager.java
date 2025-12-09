@@ -75,6 +75,8 @@ public class ConfigManager {
             cfg.targets.geyser = asBool(targets, "geyser", cfg.targets.geyser);
             cfg.targets.floodgate = asBool(targets, "floodgate", cfg.targets.floodgate);
             cfg.targets.luckperms = asBool(targets, "luckperms", cfg.targets.luckperms);
+            cfg.targets.fawe = asBool(targets, "fawe", cfg.targets.fawe);
+            cfg.targets.placeholderapi = asBool(targets, "placeholderapi", cfg.targets.placeholderapi);
 
             // packetevents nested config
             Map<String, Object> packetevents = asMap(targets, "packetevents");
@@ -96,6 +98,7 @@ public class ConfigManager {
             // geyserExtensions nested config
             Map<String, Object> geyserExtensions = asMap(targets, "geyserExtensions");
             cfg.targets.geyserExtensions.geyserUtils = asBool(geyserExtensions, "geyserUtils", cfg.targets.geyserExtensions.geyserUtils);
+            cfg.targets.geyserExtensions.geyserModelEnginePackGenerator = asBool(geyserExtensions, "geyserModelEnginePackGenerator", cfg.targets.geyserExtensions.geyserModelEnginePackGenerator);
             cfg.targets.geyserExtensions.geyserModelEngine = asBool(geyserExtensions, "geyserModelEngine", cfg.targets.geyserExtensions.geyserModelEngine);
 
             // postUpdate

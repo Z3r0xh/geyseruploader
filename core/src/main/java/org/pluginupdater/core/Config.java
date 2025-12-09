@@ -24,6 +24,8 @@ public class Config {
         public boolean geyser = false;  // Default false, opt-in
         public boolean floodgate = false;  // Default false, opt-in
         public boolean luckperms = false;  // Default false, opt-in
+        public boolean fawe = false;  // Default false, opt-in (Spigot only)
+        public boolean placeholderapi = false;  // Default false, opt-in (Spigot only)
         public PacketEventsConfig packetevents = new PacketEventsConfig();
         public ProtocolLibConfig protocollib = new ProtocolLibConfig();
         public ViaPluginsConfig viaPlugins = new ViaPluginsConfig();
@@ -49,7 +51,8 @@ public class Config {
 
     public static class GeyserExtensionsConfig {
         public boolean geyserUtils = false;  // Default false, opt-in (downloads both extension + plugin)
-        public boolean geyserModelEngine = false;  // Default false, opt-in (downloads extension + plugin for Spigot only)
+        public boolean geyserModelEnginePackGenerator = false;  // Default false, opt-in (downloads extension for all platforms)
+        public boolean geyserModelEngine = false;  // Default false, opt-in (downloads plugin for Spigot only)
     }
 
     public PostUpdate postUpdate = new PostUpdate();
