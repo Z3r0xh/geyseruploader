@@ -16,6 +16,9 @@ targets:
   packetevents:
     enabled: false
     useDevBuilds: false  # false = stable releases from GitHub, true = dev builds from Jenkins
+  geyserExtensions:
+    geyserUtils: false  # Downloads extension + plugin for all platforms
+    geyserModelEngine: false  # Downloads extension only (no plugin for Velocity)
 postUpdate:
   notifyConsole: true
   notifyPlayersWithPermission: true

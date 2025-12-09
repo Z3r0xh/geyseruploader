@@ -27,6 +27,7 @@ public class Config {
         public PacketEventsConfig packetevents = new PacketEventsConfig();
         public ProtocolLibConfig protocollib = new ProtocolLibConfig();
         public ViaPluginsConfig viaPlugins = new ViaPluginsConfig();
+        public GeyserExtensionsConfig geyserExtensions = new GeyserExtensionsConfig();
     }
 
     public static class PacketEventsConfig {
@@ -44,6 +45,11 @@ public class Config {
         public boolean viaBackwards = false;  // Default false, opt-in (Spigot only)
         public boolean viaRewind = false;  // Default false, opt-in (Spigot only)
         public boolean viaRewindLegacy = false;  // Default false, opt-in (Spigot only)
+    }
+
+    public static class GeyserExtensionsConfig {
+        public boolean geyserUtils = false;  // Default false, opt-in (downloads both extension + plugin)
+        public boolean geyserModelEngine = false;  // Default false, opt-in (downloads extension + plugin for Spigot only)
     }
 
     public PostUpdate postUpdate = new PostUpdate();

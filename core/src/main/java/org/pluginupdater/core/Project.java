@@ -9,7 +9,13 @@ public enum Project {
     VIAVERSION("viaversion", "ViaVersion"),
     VIABACKWARDS("viabackwards", "ViaBackwards"),
     VIAREWIND("viarewind", "ViaRewind"),
-    VIAREWIND_LEGACY("viarewind-legacy", "ViaRewind-Legacy-Support");
+    VIAREWIND_LEGACY("viarewind-legacy", "ViaRewind-Legacy-Support"),
+    // Geyser Extensions (go in Geyser-{Platform}/extensions/)
+    GEYSERUTILS_EXTENSION("geyserutils-extension", "geyserutils-geyser"),
+    GEYSERMODELENGINE_EXTENSION("geysermodelengine-extension", "GeyserModelEngine"),
+    // Geyser-related Plugins (go in plugins/)
+    GEYSERUTILS_PLUGIN("geyserutils-plugin", "geyserutils"),
+    GEYSERMODELENGINE_PLUGIN("geysermodelengine-plugin", "GeyserModelEngine");
 
     private final String apiName;
     private final String fileHint;
@@ -37,5 +43,13 @@ public enum Project {
 
     public boolean isViaPlugin() {
         return this == VIAVERSION || this == VIABACKWARDS || this == VIAREWIND || this == VIAREWIND_LEGACY;
+    }
+
+    public boolean isGeyserExtension() {
+        return this == GEYSERUTILS_EXTENSION || this == GEYSERMODELENGINE_EXTENSION;
+    }
+
+    public boolean isGeyserRelatedPlugin() {
+        return this == GEYSERUTILS_PLUGIN || this == GEYSERMODELENGINE_PLUGIN;
     }
 }

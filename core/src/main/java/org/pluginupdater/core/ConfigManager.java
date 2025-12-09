@@ -93,6 +93,11 @@ public class ConfigManager {
             cfg.targets.viaPlugins.viaRewind = asBool(viaPlugins, "viaRewind", cfg.targets.viaPlugins.viaRewind);
             cfg.targets.viaPlugins.viaRewindLegacy = asBool(viaPlugins, "viaRewindLegacy", cfg.targets.viaPlugins.viaRewindLegacy);
 
+            // geyserExtensions nested config
+            Map<String, Object> geyserExtensions = asMap(targets, "geyserExtensions");
+            cfg.targets.geyserExtensions.geyserUtils = asBool(geyserExtensions, "geyserUtils", cfg.targets.geyserExtensions.geyserUtils);
+            cfg.targets.geyserExtensions.geyserModelEngine = asBool(geyserExtensions, "geyserModelEngine", cfg.targets.geyserExtensions.geyserModelEngine);
+
             // postUpdate
             Map<String, Object> postUpdate = asMap(map, "postUpdate");
             cfg.postUpdate.notifyConsole = asBool(postUpdate, "notifyConsole", cfg.postUpdate.notifyConsole);

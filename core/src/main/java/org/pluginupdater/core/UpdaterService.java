@@ -24,6 +24,9 @@ public class UpdaterService {
     private static final String VIABACKWARDS_JENKINS = "https://ci.viaversion.com/job/ViaBackwards";
     private static final String VIAREWIND_JENKINS = "https://ci.viaversion.com/job/ViaRewind";
     private static final String VIAREWIND_LEGACY_JENKINS = "https://ci.viaversion.com/job/ViaRewind%20Legacy%20Support";
+    private static final String GEYSERUTILS_GITHUB_API = "https://api.github.com/repos/GeyserExtensionists/GeyserUtils/releases/latest";
+    private static final String GEYSERMODELENGINE_EXT_GITHUB_API = "https://api.github.com/repos/xSquishyLiam/mc-GeyserModelEnginePackGenerator-extension/releases/latest";
+    private static final String GEYSERMODELENGINE_PLUGIN_GITHUB_API = "https://api.github.com/repos/xSquishyLiam/mc-GeyserModelEngine-plugin/releases/latest";
     private final HttpClient http;
     private final LogAdapter log;
     private final Config cfg;
@@ -119,11 +122,19 @@ public class UpdaterService {
         if (project == Project.VIABACKWARDS) return cfg.targets.viaPlugins.viaBackwards;
         if (project == Project.VIAREWIND) return cfg.targets.viaPlugins.viaRewind;
         if (project == Project.VIAREWIND_LEGACY) return cfg.targets.viaPlugins.viaRewindLegacy;
+        if (project == Project.GEYSERUTILS_EXTENSION) return cfg.targets.geyserExtensions.geyserUtils;
+        if (project == Project.GEYSERUTILS_PLUGIN) return cfg.targets.geyserExtensions.geyserUtils;
+        if (project == Project.GEYSERMODELENGINE_EXTENSION) return cfg.targets.geyserExtensions.geyserModelEngine;
+        if (project == Project.GEYSERMODELENGINE_PLUGIN) return cfg.targets.geyserExtensions.geyserModelEngine;
         return false;
     }
 
     private String getLatestVersionString(Project project, Platform platform) throws IOException {
-        if (project.isViaPlugin()) {
+        if (project.isGeyserExtension() || project.isGeyserRelatedPlugin()) {
+            String url = getGeyserExtensionDownloadUrl(project, platform);
+            int lastSlash = url.lastIndexOf('/');
+            return url.substring(lastSlash + 1);
+        } else if (project.isViaPlugin()) {
             // VIA plugins are Spigot only
             if (platform != Platform.SPIGOT) {
                 throw new IOException("VIA plugins are only available for Spigot");
@@ -215,12 +226,29 @@ public class UpdaterService {
         if (cfg.targets.viaPlugins.viaBackwards) targets.add(Project.VIABACKWARDS);
         if (cfg.targets.viaPlugins.viaRewind) targets.add(Project.VIAREWIND);
         if (cfg.targets.viaPlugins.viaRewindLegacy) targets.add(Project.VIAREWIND_LEGACY);
+        // Geyser extensions
+        if (cfg.targets.geyserExtensions.geyserUtils) {
+            targets.add(Project.GEYSERUTILS_EXTENSION);
+            targets.add(Project.GEYSERUTILS_PLUGIN);
+        }
+        if (cfg.targets.geyserExtensions.geyserModelEngine) {
+            targets.add(Project.GEYSERMODELENGINE_EXTENSION);
+            targets.add(Project.GEYSERMODELENGINE_PLUGIN);
+        }
         return targets;
     }
 
     private UpdateOutcome updateOne(Project project, Platform platform, Path pluginsDir) {
         try {
-            Path existing = findExistingJar(project, pluginsDir);
+            // For Geyser extensions, we need to work with the Geyser extensions folder
+            Path targetDir = project.isGeyserExtension() ? findGeyserExtensionsFolder(platform, pluginsDir) : pluginsDir;
+
+            if (project.isGeyserExtension() && targetDir == null) {
+                return new UpdateOutcome(project, false, false,
+                    Optional.of("Geyser folder not found. Make sure Geyser is installed."));
+            }
+
+            Path existing = findExistingJar(project, targetDir);
             String downloadUrl = buildDownloadUrl(project, platform);
 
             Path tmp = Files.createTempFile("geyserupdater-" + project.apiName(), ".jar");
@@ -247,7 +275,7 @@ public class UpdaterService {
             }
 
             // Determine destination
-            Path dest = (existing != null) ? existing : defaultDestination(project, platform, pluginsDir);
+            Path dest = (existing != null) ? existing : defaultDestination(project, platform, targetDir);
             // Move atomically
             FileUtils.atomicMove(tmp, dest);
 
@@ -258,7 +286,9 @@ public class UpdaterService {
     }
 
     private String buildDownloadUrl(Project project, Platform platform) throws IOException {
-        if (project.isViaPlugin()) {
+        if (project.isGeyserExtension() || project.isGeyserRelatedPlugin()) {
+            return getGeyserExtensionDownloadUrl(project, platform);
+        } else if (project.isViaPlugin()) {
             return getViaPluginDownloadUrl(project);
         } else if (project.isProtocolLib()) {
             return getProtocolLibDownloadUrl(platform);
@@ -526,6 +556,90 @@ public class UpdaterService {
         throw new IOException("ProtocolLib JAR asset not found in GitHub release");
     }
 
+    private String getGeyserExtensionDownloadUrl(Project project, Platform platform) throws IOException {
+        String apiUrl;
+        String fileNameHint;
+
+        switch (project) {
+            case GEYSERUTILS_EXTENSION:
+                apiUrl = GEYSERUTILS_GITHUB_API;
+                fileNameHint = "geyserutils-geyser";
+                break;
+            case GEYSERUTILS_PLUGIN:
+                apiUrl = GEYSERUTILS_GITHUB_API;
+                // Platform-specific plugin
+                switch (platform) {
+                    case SPIGOT:
+                        fileNameHint = "geyserutils-spigot";
+                        break;
+                    case BUNGEECORD:
+                        fileNameHint = "geyserutils-bungee";
+                        break;
+                    case VELOCITY:
+                        fileNameHint = "geyserutils-velocity";
+                        break;
+                    default:
+                        throw new IOException("Unsupported platform for GeyserUtils plugin: " + platform);
+                }
+                break;
+            case GEYSERMODELENGINE_EXTENSION:
+                apiUrl = GEYSERMODELENGINE_EXT_GITHUB_API;
+                fileNameHint = "GeyserModelEngine";
+                break;
+            case GEYSERMODELENGINE_PLUGIN:
+                // Plugin is Spigot only
+                if (platform != Platform.SPIGOT) {
+                    throw new IOException("GeyserModelEngine plugin is only available for Spigot");
+                }
+                apiUrl = GEYSERMODELENGINE_PLUGIN_GITHUB_API;
+                fileNameHint = "GeyserModelEngine";
+                break;
+            default:
+                throw new IOException("Unknown Geyser extension/plugin: " + project.name());
+        }
+
+        // Fetch GitHub API to get latest release
+        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String body = resp.body();
+                return extractGeyserExtensionAsset(body, fileNameHint);
+            } else {
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching " + project.name() + " GitHub API");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    private String extractGeyserExtensionAsset(String json, String fileNameHint) throws IOException {
+        // Parse GitHub API response to find the JAR asset browser_download_url
+        String searchPattern = "\"browser_download_url\":\"";
+        int startPos = json.indexOf(searchPattern);
+
+        while (startPos != -1) {
+            int urlStart = startPos + searchPattern.length();
+            int urlEnd = json.indexOf("\"", urlStart);
+            if (urlEnd == -1) break;
+
+            String url = json.substring(urlStart, urlEnd);
+            // Check if this URL contains the file hint and is a JAR
+            if (url.contains(fileNameHint) && url.endsWith(".jar")) {
+                return url;
+            }
+
+            // Look for next occurrence
+            startPos = json.indexOf(searchPattern, urlEnd);
+        }
+
+        throw new IOException("JAR asset with hint '" + fileNameHint + "' not found in GitHub release");
+    }
+
     private String getViaPluginDownloadUrl(Project project) throws IOException {
         String jenkinsUrl;
         switch (project) {
@@ -588,6 +702,37 @@ public class UpdaterService {
         }
 
         throw new IOException(project.name() + " artifact not found in Jenkins build");
+    }
+
+    private Path findGeyserExtensionsFolder(Platform platform, Path pluginsDir) throws IOException {
+        // Find the Geyser folder based on platform
+        String geyserFolderName;
+        switch (platform) {
+            case SPIGOT:
+                geyserFolderName = "Geyser-Spigot";
+                break;
+            case BUNGEECORD:
+                geyserFolderName = "Geyser-BungeeCord";
+                break;
+            case VELOCITY:
+                geyserFolderName = "Geyser-Velocity";
+                break;
+            default:
+                return null;
+        }
+
+        Path geyserFolder = pluginsDir.resolve(geyserFolderName);
+        if (!Files.exists(geyserFolder) || !Files.isDirectory(geyserFolder)) {
+            return null;
+        }
+
+        // Find or create the extensions folder
+        Path extensionsFolder = geyserFolder.resolve("extensions");
+        if (!Files.exists(extensionsFolder)) {
+            Files.createDirectories(extensionsFolder);
+        }
+
+        return extensionsFolder;
     }
 
     private void downloadTo(String url, Path target) throws IOException {
@@ -686,6 +831,27 @@ public class UpdaterService {
             case VIAREWIND_LEGACY:
                 // ViaRewind Legacy Support is Spigot only
                 filename = "ViaRewind-Legacy-Support.jar";
+                break;
+            case GEYSERUTILS_EXTENSION:
+                // GeyserUtils extension - same for all platforms
+                filename = "geyserutils-geyser.jar";
+                break;
+            case GEYSERUTILS_PLUGIN:
+                // GeyserUtils plugin - platform-specific
+                switch (platform) {
+                    case SPIGOT: filename = "geyserutils-spigot.jar"; break;
+                    case BUNGEECORD: filename = "geyserutils-bungee.jar"; break;
+                    case VELOCITY: filename = "geyserutils-velocity.jar"; break;
+                    default: filename = "geyserutils.jar";
+                }
+                break;
+            case GEYSERMODELENGINE_EXTENSION:
+                // GeyserModelEngine extension - same for all platforms
+                filename = "GeyserModelEngine-Extension.jar";
+                break;
+            case GEYSERMODELENGINE_PLUGIN:
+                // GeyserModelEngine plugin - Spigot only
+                filename = "GeyserModelEngine-Plugin.jar";
                 break;
             default:
                 filename = "plugin.jar";
