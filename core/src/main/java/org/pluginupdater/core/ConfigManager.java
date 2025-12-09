@@ -55,6 +55,15 @@ public class ConfigManager {
                 return cfg; // default values
             }
 
+            // Read config version
+            int loadedVersion = asInt(map, "configVersion", 0);
+            cfg.configVersion = loadedVersion;
+
+            // Perform migration if needed
+            if (loadedVersion < Config.CURRENT_CONFIG_VERSION) {
+                migrateConfig(loadedVersion, cfg, map);
+            }
+
             // Level 1
             cfg.enabled = asBool(map, "enabled", cfg.enabled);
             cfg.language = asStr(map, "language", cfg.language);
@@ -124,6 +133,11 @@ public class ConfigManager {
 
             // Load messages from language file
             loadMessages(cfg);
+
+            // If config was migrated, save the updated version
+            if (loadedVersion < Config.CURRENT_CONFIG_VERSION) {
+                saveConfig(cfg);
+            }
 
             return cfg;
         } catch (IOException e) {
@@ -263,5 +277,47 @@ public class ConfigManager {
         cfg.messages.dataDirectoryError = asStr(map, "dataDirectoryError", cfg.messages.dataDirectoryError);
         cfg.messages.reloadSuccess = asStr(map, "reloadSuccess", cfg.messages.reloadSuccess);
         cfg.messages.reloadFailed = asStr(map, "reloadFailed", cfg.messages.reloadFailed);
+    }
+
+    /**
+     * Migrate configuration from older versions to current version
+     */
+    private void migrateConfig(int fromVersion, Config cfg, Map<?, ?> originalMap) {
+        // Version 0 -> 1: Added configVersion field and geyserModelEnginePackGenerator structure
+        if (fromVersion < 1) {
+            // The geyserModelEnginePackGenerator migration is already handled in the main load logic
+            // Just update the version
+            cfg.configVersion = 1;
+        }
+
+        // Future migrations would go here
+        // if (fromVersion < 2) { ... }
+    }
+
+    /**
+     * Save configuration to file, preserving user comments where possible
+     */
+    private void saveConfig(Config cfg) {
+        try {
+            // Read existing config to preserve comments
+            String existingContent = Files.exists(configPath) ? Files.readString(configPath, StandardCharsets.UTF_8) : "";
+
+            // Build new config content
+            StringBuilder sb = new StringBuilder();
+
+            // Add/update configVersion at the top
+            if (existingContent.contains("configVersion:")) {
+                // Replace existing configVersion
+                existingContent = existingContent.replaceFirst("configVersion:\\s*\\d+", "configVersion: " + cfg.configVersion);
+                Files.writeString(configPath, existingContent, StandardCharsets.UTF_8);
+            } else {
+                // Add configVersion to the beginning
+                sb.append("configVersion: ").append(cfg.configVersion).append("\n");
+                sb.append(existingContent);
+                Files.writeString(configPath, sb.toString(), StandardCharsets.UTF_8);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

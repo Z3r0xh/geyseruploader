@@ -1,5 +1,6 @@
 # Auto-generated from core defaults on first startup,
 # but provided here so manual installation uses the same initial values
+configVersion: 1
 enabled: true
 # Language file to use (en, es, ja, de, fr, zh)
 # Available languages: English (en), Spanish (es), Japanese (ja), German (de), French (fr), Chinese (zh)

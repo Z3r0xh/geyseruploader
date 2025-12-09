@@ -1,6 +1,10 @@
 package org.pluginupdater.core;
 
 public class Config {
+    public static final int CURRENT_CONFIG_VERSION = 1;
+
+    public int configVersion = CURRENT_CONFIG_VERSION;
+
     public boolean enabled = true;
 
     public String language = "en";
