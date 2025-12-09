@@ -9,6 +9,7 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import net.kyori.adventure.text.Component;
+import org.bstats.velocity.Metrics;
 import org.pluginupdater.core.Config;
 import org.pluginupdater.core.ConfigManager;
 import org.pluginupdater.core.Platform;
@@ -30,15 +31,17 @@ public class VelocityPluginUpdaterPlugin {
     private final ProxyServer proxy;
     private final Logger logger;
     private final Path dataDir;
+    private final Metrics.Factory metricsFactory;
 
     private ConfigManager cfgMgr;
     private Config cfg;
 
     @Inject
-    public VelocityPluginUpdaterPlugin(ProxyServer proxy, Logger logger, @DataDirectory Path dataDir) {
+    public VelocityPluginUpdaterPlugin(ProxyServer proxy, Logger logger, @DataDirectory Path dataDir, Metrics.Factory metricsFactory) {
         this.proxy = proxy;
         this.logger = logger;
         this.dataDir = dataDir;
+        this.metricsFactory = metricsFactory;
     }
 
     @Subscribe
@@ -68,6 +71,10 @@ public class VelocityPluginUpdaterPlugin {
             logger.info(cfg.messages.pluginDisabled);
             return;
         }
+
+        // Initialize bStats
+        int pluginId = 28288;
+        Metrics metrics = metricsFactory.make(this, pluginId);
 
         if (cfg.checkOnStartup) {
             logger.info(cfg.messages.startUpCheck);

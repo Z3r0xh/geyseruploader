@@ -33,6 +33,12 @@
         <version>4.17.0</version>
         <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.bstats</groupId>
+      <artifactId>bstats-velocity</artifactId>
+      <version>3.1.0</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -55,6 +61,12 @@
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <minimizeJar>false</minimizeJar>
+              <relocations>
+                <relocation>
+                  <pattern>org.bstats</pattern>
+                  <shadedPattern>org.pluginupdater.velocity.bstats</shadedPattern>
+                </relocation>
+              </relocations>
             </configuration>
           </execution>
         </executions>
