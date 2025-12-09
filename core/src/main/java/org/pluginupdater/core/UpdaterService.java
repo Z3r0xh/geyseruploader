@@ -253,6 +253,11 @@ public class UpdaterService {
             String url = getPlaceholderAPIUrl();
             int lastSlash = url.lastIndexOf('/');
             return url.substring(lastSlash + 1);
+        } else if (project.isGeyserExtension() || project.isGeyserRelatedPlugin()) {
+            // Geyser extensions and related plugins from GitHub releases
+            String url = getGeyserExtensionDownloadUrl(project, platform);
+            int lastSlash = url.lastIndexOf('/');
+            return url.substring(lastSlash + 1);
         } else {
             // Geyser/Floodgate - construct expected filename based on project and platform
             return getDefaultFilename(project, platform);
