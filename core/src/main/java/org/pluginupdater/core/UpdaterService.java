@@ -323,19 +323,30 @@ public class UpdaterService {
                     Optional.of(cfg.messages.downloadFailed.replace("{error}", e.getMessage())));
             }
 
-            // If existing file exists, compare hashes
+            // If existing file exists, compare by filename instead of hash for GitHub releases
+            // (GitHub releases don't change for the same version, so filename comparison is reliable)
             if (existing != null && Files.exists(existing)) {
-                try {
-                    String newSha = FileUtils.sha256(tmp);
-                    String oldSha = FileUtils.sha256(existing);
-                    if (newSha.equalsIgnoreCase(oldSha)) {
-                        Files.deleteIfExists(tmp);
-                        return new UpdateOutcome(project, false, true, Optional.empty());
-                    }
-                } catch (IOException e) {
-                    // proceed to overwrite if cannot hash
-                    log.warn(cfg.messages.hashComparisonFailed.replace("{error}", e.getMessage()));
+                String existingFilename = existing.getFileName().toString();
+                String newFilename;
+
+                // Determine what the new filename would be
+                if (project == Project.GEYSER || project == Project.FLOODGATE) {
+                    newFilename = defaultDestination(project, platform, targetDir).getFileName().toString();
+                } else {
+                    newFilename = extractFilenameFromUrl(downloadUrl);
                 }
+
+                log.info("Comparing versions - Existing: " + existingFilename + ", Latest: " + newFilename);
+
+                // If filenames match, assume it's the same version
+                if (existingFilename.equals(newFilename)) {
+                    Files.deleteIfExists(tmp);
+                    log.info(project.apiName() + " is already up to date (filename match)");
+                    return new UpdateOutcome(project, false, true, Optional.empty());
+                }
+
+                // Filenames are different, proceed with update
+                log.info(project.apiName() + " has a new version available: " + newFilename);
             }
 
             // Determine destination
