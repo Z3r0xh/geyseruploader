@@ -151,7 +151,7 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
         });
     }
 
-    private class UpdateCommand extends Command {
+    private class UpdateCommand extends Command implements net.md_5.bungee.api.plugin.TabExecutor {
         public UpdateCommand() {
             super("pluginupdate-bungee", "pluginupdater.admin", new String[0]);
         }
@@ -199,6 +199,26 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
             }
 
             runAsyncCheck(true, sender);
+        }
+
+        @Override
+        public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+            if (!sender.hasPermission("pluginupdater.admin")) {
+                return new java.util.ArrayList<>();
+            }
+
+            if (args.length == 1) {
+                java.util.List<String> completions = new java.util.ArrayList<>();
+                String input = args[0].toLowerCase();
+
+                if ("check".startsWith(input)) completions.add("check");
+                if ("reload".startsWith(input)) completions.add("reload");
+                if ("packtest".startsWith(input)) completions.add("packtest");
+
+                return completions;
+            }
+
+            return new java.util.ArrayList<>();
         }
     }
 
