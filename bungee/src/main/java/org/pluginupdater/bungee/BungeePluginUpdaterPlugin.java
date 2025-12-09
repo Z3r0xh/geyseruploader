@@ -99,64 +99,46 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
             send(sender, cfg.messages.versionCheckHeader);
             send(sender, cfg.messages.versionCheckTitle);
             send(sender, cfg.messages.versionCheckHeader);
-            send(sender, "");
-            send(sender, cfg.messages.versionCheckColumnHeaders);
-            send(sender, cfg.messages.versionCheckSeparator);
 
             int enabledCount = 0;
             int updatesCount = 0;
 
             // Display each project
             for (org.pluginupdater.core.VersionInfo info : versions) {
-                String projectName = formatProjectName(info.project.name());
+                String projectName = info.project.name();
 
                 if (!info.enabled) {
                     send(sender, cfg.messages.versionCheckDisabled.replace("{project}", projectName));
                 } else {
                     enabledCount++;
                     if (info.error.isPresent()) {
+                        String errorMsg = info.error.get();
+                        if (errorMsg.length() > 40) errorMsg = errorMsg.substring(0, 37) + "...";
                         send(sender, cfg.messages.versionCheckError
                                 .replace("{project}", projectName)
-                                .replace("{error}", truncate(info.error.get(), 30)));
+                                .replace("{error}", errorMsg));
                     } else if (!info.installedVersion.isPresent()) {
                         updatesCount++;
                         send(sender, cfg.messages.versionCheckNotFound
-                                .replace("{project}", projectName)
-                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                                .replace("{project}", projectName));
                     } else if (info.updateAvailable) {
                         updatesCount++;
                         send(sender, cfg.messages.versionCheckUpdateAvailable
-                                .replace("{project}", projectName)
-                                .replace("{installed}", truncate(info.installedVersion.get(), 30))
-                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                                .replace("{project}", projectName));
                     } else {
                         send(sender, cfg.messages.versionCheckUpToDate
-                                .replace("{project}", projectName)
-                                .replace("{installed}", truncate(info.installedVersion.get(), 30))
-                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                                .replace("{project}", projectName));
                     }
                 }
             }
 
             // Display footer
-            send(sender, cfg.messages.versionCheckSeparator);
             send(sender, cfg.messages.versionCheckSummary
                     .replace("{enabled}", String.valueOf(enabledCount))
                     .replace("{updates}", String.valueOf(updatesCount)));
             send(sender, cfg.messages.versionCheckFooter);
             send(sender, "");
         });
-    }
-
-    private String formatProjectName(String name) {
-        // Pad to 15 characters
-        if (name.length() >= 15) return name.substring(0, 15);
-        return name + " ".repeat(15 - name.length());
-    }
-
-    private String truncate(String str, int maxLength) {
-        if (str.length() <= maxLength) return str;
-        return str.substring(0, maxLength - 3) + "...";
     }
 
     private class UpdateCommand extends Command {

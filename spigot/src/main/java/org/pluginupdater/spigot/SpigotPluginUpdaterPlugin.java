@@ -105,64 +105,46 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
             sendTo(sender, cfg.messages.versionCheckHeader);
             sendTo(sender, cfg.messages.versionCheckTitle);
             sendTo(sender, cfg.messages.versionCheckHeader);
-            sendTo(sender, "");
-            sendTo(sender, cfg.messages.versionCheckColumnHeaders);
-            sendTo(sender, cfg.messages.versionCheckSeparator);
 
             int enabledCount = 0;
             int updatesCount = 0;
 
             // Display each project
             for (org.pluginupdater.core.VersionInfo info : versions) {
-                String projectName = formatProjectName(info.project.name());
+                String projectName = info.project.name();
 
                 if (!info.enabled) {
                     sendTo(sender, cfg.messages.versionCheckDisabled.replace("{project}", projectName));
                 } else {
                     enabledCount++;
                     if (info.error.isPresent()) {
+                        String errorMsg = info.error.get();
+                        if (errorMsg.length() > 40) errorMsg = errorMsg.substring(0, 37) + "...";
                         sendTo(sender, cfg.messages.versionCheckError
                                 .replace("{project}", projectName)
-                                .replace("{error}", truncate(info.error.get(), 30)));
+                                .replace("{error}", errorMsg));
                     } else if (!info.installedVersion.isPresent()) {
                         updatesCount++;
                         sendTo(sender, cfg.messages.versionCheckNotFound
-                                .replace("{project}", projectName)
-                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                                .replace("{project}", projectName));
                     } else if (info.updateAvailable) {
                         updatesCount++;
                         sendTo(sender, cfg.messages.versionCheckUpdateAvailable
-                                .replace("{project}", projectName)
-                                .replace("{installed}", truncate(info.installedVersion.get(), 30))
-                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                                .replace("{project}", projectName));
                     } else {
                         sendTo(sender, cfg.messages.versionCheckUpToDate
-                                .replace("{project}", projectName)
-                                .replace("{installed}", truncate(info.installedVersion.get(), 30))
-                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                                .replace("{project}", projectName));
                     }
                 }
             }
 
             // Display footer
-            sendTo(sender, cfg.messages.versionCheckSeparator);
             sendTo(sender, cfg.messages.versionCheckSummary
                     .replace("{enabled}", String.valueOf(enabledCount))
                     .replace("{updates}", String.valueOf(updatesCount)));
             sendTo(sender, cfg.messages.versionCheckFooter);
             sendTo(sender, "");
         });
-    }
-
-    private String formatProjectName(String name) {
-        // Pad to 15 characters
-        if (name.length() >= 15) return name.substring(0, 15);
-        return name + " ".repeat(15 - name.length());
-    }
-
-    private String truncate(String str, int maxLength) {
-        if (str.length() <= maxLength) return str;
-        return str.substring(0, maxLength - 3) + "...";
     }
 
     private void msg(CommandSender sender, String message) {

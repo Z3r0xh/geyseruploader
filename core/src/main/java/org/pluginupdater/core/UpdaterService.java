@@ -55,7 +55,7 @@ public class UpdaterService {
     }
 
     public List<UpdateOutcome> checkAndUpdate(Platform platform, Path pluginsDir) {
-        List<Project> targets = collectTargets();
+        List<Project> targets = collectTargets(platform);
         if (targets.isEmpty()) {
             return Collections.singletonList(new UpdateOutcome(Project.GEYSER, false, false,
                     Optional.of("No targets enabled")));
@@ -87,8 +87,21 @@ public class UpdaterService {
         }
 
         try {
+            // Determine search directory: extensions folder for Geyser extensions, plugins folder otherwise
+            Path searchDir = pluginsDir;
+            if (project.isGeyserExtension()) {
+                try {
+                    Path extensionsDir = findGeyserExtensionsFolder(platform, pluginsDir);
+                    if (extensionsDir != null) {
+                        searchDir = extensionsDir;
+                    }
+                } catch (IOException e) {
+                    // If Geyser folder not found, searchDir remains pluginsDir (will return "not found")
+                }
+            }
+
             // Find installed version
-            Path existing = findExistingJar(project, pluginsDir);
+            Path existing = findExistingJar(project, searchDir);
             String installedVersion = existing != null ? existing.getFileName().toString() : null;
 
             // Get latest version URL (don't download, just check)
@@ -215,7 +228,7 @@ public class UpdaterService {
         return !installed.equalsIgnoreCase(latest);
     }
 
-    private List<Project> collectTargets() {
+    private List<Project> collectTargets(Platform platform) {
         List<Project> targets = new ArrayList<>();
         if (cfg.targets.geyser) targets.add(Project.GEYSER);
         if (cfg.targets.floodgate) targets.add(Project.FLOODGATE);
@@ -233,7 +246,10 @@ public class UpdaterService {
         }
         if (cfg.targets.geyserExtensions.geyserModelEngine) {
             targets.add(Project.GEYSERMODELENGINE_EXTENSION);
-            targets.add(Project.GEYSERMODELENGINE_PLUGIN);
+            // Plugin is only for Spigot
+            if (platform == Platform.SPIGOT) {
+                targets.add(Project.GEYSERMODELENGINE_PLUGIN);
+            }
         }
         return targets;
     }
@@ -417,17 +433,22 @@ public class UpdaterService {
 
         // Parse GitHub API response to find the asset browser_download_url
         // Example: "browser_download_url":"https://github.com/retrooper/packetevents/releases/download/v2.10.1/packetevents-spigot-2.10.1.jar"
-        String searchPattern = "\"browser_download_url\":\"https://github.com/retrooper/packetevents/releases/download/";
+        String searchPattern = "\"browser_download_url\":\"";
         int startPos = json.indexOf(searchPattern);
 
         while (startPos != -1) {
-            int urlStart = startPos + "\"browser_download_url\":\"".length();
+            int urlStart = startPos + searchPattern.length();
             int urlEnd = json.indexOf("\"", urlStart);
             if (urlEnd == -1) break;
 
             String url = json.substring(urlStart, urlEnd);
-            // Check if this URL is for our platform
-            if (url.contains("packetevents-" + platformName + "-") && url.endsWith(".jar")) {
+            // Check if this URL is for our platform and NOT the API jar
+            // Look for exact pattern: packetevents-{platform}-{version}.jar
+            if (url.contains("/packetevents-" + platformName + "-") &&
+                url.endsWith(".jar") &&
+                !url.contains("-api-") &&
+                !url.contains("-javadoc") &&
+                !url.contains("-sources")) {
                 return url;
             }
 
@@ -444,20 +465,29 @@ public class UpdaterService {
 
         // Look for artifact with pattern: packetevents-{platform}-{version}.jar
         // We need to find the fileName in the artifacts array that matches our platform
-        String searchPattern = "\"fileName\":\"packetevents-" + platformName + "-";
+        String searchPattern = "\"fileName\":\"";
         int startIndex = json.indexOf(searchPattern);
-        if (startIndex == -1) {
-            throw new IOException("PacketEvents artifact for platform " + platformName + " not found");
+
+        while (startIndex != -1) {
+            int fileNameStart = startIndex + searchPattern.length();
+            int fileNameEnd = json.indexOf("\"", fileNameStart);
+            if (fileNameEnd == -1) break;
+
+            String fileName = json.substring(fileNameStart, fileNameEnd);
+            // Check if this is the platform-specific plugin JAR (not API, javadoc, or sources)
+            if (fileName.startsWith("packetevents-" + platformName + "-") &&
+                fileName.endsWith(".jar") &&
+                !fileName.contains("-api-") &&
+                !fileName.contains("-javadoc") &&
+                !fileName.contains("-sources")) {
+                return fileName;
+            }
+
+            // Look for next occurrence
+            startIndex = json.indexOf(searchPattern, fileNameEnd);
         }
 
-        // Extract the full filename
-        startIndex += "\"fileName\":\"".length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) {
-            throw new IOException("Invalid JSON format for PacketEvents artifact");
-        }
-
-        return json.substring(startIndex, endIndex);
+        throw new IOException("PacketEvents artifact for platform " + platformName + " not found");
     }
 
     private String mapPlatformToPacketEvents(Platform platform) {

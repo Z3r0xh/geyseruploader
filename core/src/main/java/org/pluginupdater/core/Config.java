@@ -86,17 +86,17 @@ public class Config {
         public String reloadFailed = "§cFailed to reload configuration: {error}";
 
         // Version check messages
-        public String versionCheckHeader = "§e§l══════════════════════════════════════════════";
-        public String versionCheckTitle = "§a§lPluginUpdater §7- §fVersion Check";
-        public String versionCheckFooter = "§e§l══════════════════════════════════════════════";
-        public String versionCheckColumnHeaders = "§7Plugin          Status      Installed                         Latest Available";
-        public String versionCheckSeparator = "§7─────────────────────────────────────────────────────────────────────────────────────────";
-        public String versionCheckDisabled = "§7{project}§r          §7DISABLED§r    §7-§r                                 §7-§r";
-        public String versionCheckUpToDate = "§a{project}§r          §aENABLED§r     §f{installed}§r     §a{latest} ✓§r";
-        public String versionCheckUpdateAvailable = "§e{project}§r          §eENABLED§r     §f{installed}§r     §e{latest} ⬆§r";
-        public String versionCheckError = "§c{project}§r          §cERROR§r       §7-§r                                 §c{error}§r";
-        public String versionCheckNotFound = "§7{project}§r          §eENABLED§r     §7Not found§r                          §e{latest}§r";
-        public String versionCheckSummary = "§f{enabled} §7plugin(s) enabled §8|§r §e{updates} §7update(s) available";
+        public String versionCheckHeader = "§e§l═══════════════════════════════════";
+        public String versionCheckTitle = "§a§lPluginUpdater §7Version Check";
+        public String versionCheckFooter = "§e§l═══════════════════════════════════";
+        public String versionCheckColumnHeaders = "";  // No column headers for compact format
+        public String versionCheckSeparator = "";  // No separator for compact format
+        public String versionCheckDisabled = "§8▪ §7{project} §8[DISABLED]";
+        public String versionCheckUpToDate = "§a✓ §f{project} §7- §aUp to date";
+        public String versionCheckUpdateAvailable = "§e⬆ §f{project} §7- §eUpdate available";
+        public String versionCheckError = "§c✗ §f{project} §7- §c{error}";
+        public String versionCheckNotFound = "§e○ §f{project} §7- §eNot installed";
+        public String versionCheckSummary = "§f{enabled} §7enabled §8|§r §e{updates} §7update(s) available";
         public String versionCheckFetching = "§7Fetching version information...";
     }
 }
