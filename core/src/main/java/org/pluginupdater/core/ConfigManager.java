@@ -76,6 +76,16 @@ public class ConfigManager {
             cfg.targets.floodgate = asBool(targets, "floodgate", cfg.targets.floodgate);
             cfg.targets.luckperms = asBool(targets, "luckperms", cfg.targets.luckperms);
 
+            // packetevents nested config
+            Map<String, Object> packetevents = asMap(targets, "packetevents");
+            cfg.targets.packetevents.enabled = asBool(packetevents, "enabled", cfg.targets.packetevents.enabled);
+            cfg.targets.packetevents.useDevBuilds = asBool(packetevents, "useDevBuilds", cfg.targets.packetevents.useDevBuilds);
+
+            // protocollib nested config
+            Map<String, Object> protocollib = asMap(targets, "protocollib");
+            cfg.targets.protocollib.enabled = asBool(protocollib, "enabled", cfg.targets.protocollib.enabled);
+            cfg.targets.protocollib.useDevBuilds = asBool(protocollib, "useDevBuilds", cfg.targets.protocollib.useDevBuilds);
+
             // postUpdate
             Map<String, Object> postUpdate = asMap(map, "postUpdate");
             cfg.postUpdate.notifyConsole = asBool(postUpdate, "notifyConsole", cfg.postUpdate.notifyConsole);

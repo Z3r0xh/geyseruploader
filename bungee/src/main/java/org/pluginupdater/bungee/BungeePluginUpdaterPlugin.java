@@ -86,24 +86,106 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
         });
     }
 
+    private void runVersionCheck(CommandSender sender) {
+        ProxyServer.getInstance().getScheduler().runAsync(this, () -> {
+            send(sender, cfg.messages.prefix + cfg.messages.versionCheckFetching);
+
+            UpdaterService service = new UpdaterService(new BungeeLogger(), cfg);
+            Path pluginsDir = getDataFolder().toPath().getParent();
+            List<org.pluginupdater.core.VersionInfo> versions = service.checkVersions(Platform.BUNGEECORD, pluginsDir);
+
+            // Display header
+            send(sender, "");
+            send(sender, cfg.messages.versionCheckHeader);
+            send(sender, cfg.messages.versionCheckTitle);
+            send(sender, cfg.messages.versionCheckHeader);
+            send(sender, "");
+            send(sender, cfg.messages.versionCheckColumnHeaders);
+            send(sender, cfg.messages.versionCheckSeparator);
+
+            int enabledCount = 0;
+            int updatesCount = 0;
+
+            // Display each project
+            for (org.pluginupdater.core.VersionInfo info : versions) {
+                String projectName = formatProjectName(info.project.name());
+
+                if (!info.enabled) {
+                    send(sender, cfg.messages.versionCheckDisabled.replace("{project}", projectName));
+                } else {
+                    enabledCount++;
+                    if (info.error.isPresent()) {
+                        send(sender, cfg.messages.versionCheckError
+                                .replace("{project}", projectName)
+                                .replace("{error}", truncate(info.error.get(), 30)));
+                    } else if (!info.installedVersion.isPresent()) {
+                        updatesCount++;
+                        send(sender, cfg.messages.versionCheckNotFound
+                                .replace("{project}", projectName)
+                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                    } else if (info.updateAvailable) {
+                        updatesCount++;
+                        send(sender, cfg.messages.versionCheckUpdateAvailable
+                                .replace("{project}", projectName)
+                                .replace("{installed}", truncate(info.installedVersion.get(), 30))
+                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                    } else {
+                        send(sender, cfg.messages.versionCheckUpToDate
+                                .replace("{project}", projectName)
+                                .replace("{installed}", truncate(info.installedVersion.get(), 30))
+                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                    }
+                }
+            }
+
+            // Display footer
+            send(sender, cfg.messages.versionCheckSeparator);
+            send(sender, cfg.messages.versionCheckSummary
+                    .replace("{enabled}", String.valueOf(enabledCount))
+                    .replace("{updates}", String.valueOf(updatesCount)));
+            send(sender, cfg.messages.versionCheckFooter);
+            send(sender, "");
+        });
+    }
+
+    private String formatProjectName(String name) {
+        // Pad to 15 characters
+        if (name.length() >= 15) return name.substring(0, 15);
+        return name + " ".repeat(15 - name.length());
+    }
+
+    private String truncate(String str, int maxLength) {
+        if (str.length() <= maxLength) return str;
+        return str.substring(0, maxLength - 3) + "...";
+    }
+
     private class UpdateCommand extends Command {
         public UpdateCommand() { super("pluginupdate-bungee", "pluginupdater.admin", new String[0]); }
 
         @Override
         public void execute(CommandSender sender, String[] args) {
-            // Check for reload subcommand
-            if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
-                if (!sender.hasPermission("pluginupdater.reload")) {
-                    sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
+            // Check for subcommands
+            if (args.length > 0) {
+                if (args[0].equalsIgnoreCase("reload")) {
+                    if (!sender.hasPermission("pluginupdater.reload")) {
+                        sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
+                        return;
+                    }
+                    try {
+                        cfg = cfgMgr.loadOrCreateDefault();
+                        sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.reloadSuccess));
+                    } catch (Exception e) {
+                        sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.reloadFailed.replace("{error}", e.getMessage())));
+                    }
+                    return;
+                } else if (args[0].equalsIgnoreCase("check")) {
+                    if (!sender.hasPermission("pluginupdater.check")) {
+                        sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
+                        return;
+                    }
+                    runVersionCheck(sender);
                     return;
                 }
-                try {
-                    cfg = cfgMgr.loadOrCreateDefault();
-                    sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.reloadSuccess));
-                } catch (Exception e) {
-                    sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.reloadFailed.replace("{error}", e.getMessage())));
-                }
-                return;
             }
 
             runAsyncCheck(true, sender);
@@ -150,7 +232,7 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
 
                     String name = p.getFileName().toString().toLowerCase();
 
-                    return name.endsWith(".jar") && (name.contains("geyser") || name.contains("floodgate") || name.contains("luckperms"));
+                    return name.endsWith(".jar") && (name.contains("geyser") || name.contains("floodgate") || name.contains("luckperms") || name.contains("packetevents"));
 
                 }).forEach(p -> {
 

@@ -12,9 +12,15 @@ adminLogin:
   enabled: true
   permission: geyserupdater.admin
 targets:
-  geyser: true
-  floodgate: true
-  luckperms: true
+  geyser: false
+  floodgate: false
+  luckperms: false
+  packetevents:
+    enabled: false
+    useDevBuilds: false  # false = stable releases from GitHub, true = dev builds from Jenkins
+  protocollib:
+    enabled: false
+    useDevBuilds: false  # false = stable releases from GitHub, true = dev builds from "dev-build" tag
 postUpdate:
   notifyConsole: true
   notifyPlayersWithPermission: true

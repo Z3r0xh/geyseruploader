@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
 public class UpdaterService {
     private static final String GEYSER_BASE = "https://download.geysermc.org/v2/projects";
     private static final String LUCKPERMS_API = "https://metadata.luckperms.net/data/downloads";
+    private static final String PACKETEVENTS_JENKINS = "https://ci.codemc.io/job/retrooper/job/packetevents";
+    private static final String PACKETEVENTS_GITHUB_API = "https://api.github.com/repos/retrooper/packetevents/releases/latest";
+    private static final String PROTOCOLLIB_GITHUB_API = "https://api.github.com/repos/dmulloy2/ProtocolLib";
     private final HttpClient http;
     private final LogAdapter log;
     private final Config cfg;
@@ -57,11 +60,141 @@ public class UpdaterService {
         return results;
     }
 
+    public List<VersionInfo> checkVersions(Platform platform, Path pluginsDir) {
+        List<VersionInfo> results = new ArrayList<>();
+
+        // Check all projects (not just enabled ones)
+        for (Project project : Project.values()) {
+            results.add(checkVersionForProject(project, platform, pluginsDir));
+        }
+
+        return results;
+    }
+
+    private VersionInfo checkVersionForProject(Project project, Platform platform, Path pluginsDir) {
+        // Check if target is enabled
+        boolean enabled = isProjectEnabled(project);
+
+        if (!enabled) {
+            return VersionInfo.disabled(project);
+        }
+
+        try {
+            // Find installed version
+            Path existing = findExistingJar(project, pluginsDir);
+            String installedVersion = existing != null ? existing.getFileName().toString() : null;
+
+            // Get latest version URL (don't download, just check)
+            String latestVersion = getLatestVersionString(project, platform);
+
+            // Compare versions
+            if (installedVersion == null) {
+                return VersionInfo.notInstalled(project, latestVersion);
+            }
+
+            // Check if update is available by comparing version strings
+            boolean updateAvailable = isUpdateAvailable(installedVersion, latestVersion, project);
+
+            if (updateAvailable) {
+                return VersionInfo.updateAvailable(project, installedVersion, latestVersion);
+            } else {
+                return VersionInfo.upToDate(project, installedVersion, latestVersion);
+            }
+        } catch (Exception e) {
+            return VersionInfo.error(project, e.getMessage());
+        }
+    }
+
+    private boolean isProjectEnabled(Project project) {
+        if (project == Project.GEYSER) return cfg.targets.geyser;
+        if (project == Project.FLOODGATE) return cfg.targets.floodgate;
+        if (project == Project.LUCKPERMS) return cfg.targets.luckperms;
+        if (project == Project.PACKETEVENTS) return cfg.targets.packetevents.enabled;
+        if (project == Project.PROTOCOLLIB) return cfg.targets.protocollib.enabled;
+        return false;
+    }
+
+    private String getLatestVersionString(Project project, Platform platform) throws IOException {
+        if (project.isProtocolLib()) {
+            // ProtocolLib is Spigot only
+            if (platform != Platform.SPIGOT) {
+                throw new IOException("ProtocolLib is only available for Spigot");
+            }
+            // Check if using dev builds or stable releases
+            if (cfg.targets.protocollib.enabled && cfg.targets.protocollib.useDevBuilds) {
+                // Get from "dev-build" tag on GitHub
+                String url = getProtocolLibDevBuildUrl();
+                int lastSlash = url.lastIndexOf('/');
+                return url.substring(lastSlash + 1);
+            } else {
+                // Get from latest stable release
+                String url = getProtocolLibStableUrl();
+                int lastSlash = url.lastIndexOf('/');
+                return url.substring(lastSlash + 1);
+            }
+        } else if (project.isPacketEvents()) {
+            // Check if using dev builds or stable releases
+            if (cfg.targets.packetevents.enabled && cfg.targets.packetevents.useDevBuilds) {
+                // Get from Jenkins artifact name
+                String apiUrl = PACKETEVENTS_JENKINS + "/lastSuccessfulBuild/api/json";
+                HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+                        .timeout(Duration.ofSeconds(15))
+                        .GET()
+                        .build();
+                try {
+                    HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+                    if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                        return extractPacketEventsArtifact(resp.body(), platform);
+                    }
+                    throw new IOException("Failed to fetch PacketEvents Jenkins version");
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("Interrupted", e);
+                }
+            } else {
+                // Get from GitHub releases
+                String url = getPacketEventsGitHubUrl(platform);
+                // Extract filename from URL
+                int lastSlash = url.lastIndexOf('/');
+                return url.substring(lastSlash + 1);
+            }
+        } else if (project.isLuckPerms()) {
+            // Get from LuckPerms API
+            HttpRequest req = HttpRequest.newBuilder(URI.create(LUCKPERMS_API))
+                    .timeout(Duration.ofSeconds(15))
+                    .GET()
+                    .build();
+            try {
+                HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+                if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                    String url = extractLuckPermsUrl(resp.body(), platform);
+                    // Extract version from URL (e.g., LuckPerms-Bukkit-5.4.139.jar)
+                    int lastSlash = url.lastIndexOf('/');
+                    return url.substring(lastSlash + 1);
+                }
+                throw new IOException("Failed to fetch LuckPerms version");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Interrupted", e);
+            }
+        } else {
+            // Geyser/Floodgate - return build info
+            return "Latest build";
+        }
+    }
+
+    private boolean isUpdateAvailable(String installed, String latest, Project project) {
+        // Simple string comparison - if names don't match, update is available
+        return !installed.equalsIgnoreCase(latest);
+    }
+
     private List<Project> collectTargets() {
         List<Project> targets = new ArrayList<>();
         if (cfg.targets.geyser) targets.add(Project.GEYSER);
         if (cfg.targets.floodgate) targets.add(Project.FLOODGATE);
         if (cfg.targets.luckperms) targets.add(Project.LUCKPERMS);
+        if (cfg.targets.packetevents.enabled) targets.add(Project.PACKETEVENTS);
+        if (cfg.targets.protocollib.enabled) targets.add(Project.PROTOCOLLIB);
         return targets;
     }
 
@@ -105,8 +238,12 @@ public class UpdaterService {
     }
 
     private String buildDownloadUrl(Project project, Platform platform) throws IOException {
-        if (project.isLuckPerms()) {
+        if (project.isProtocolLib()) {
+            return getProtocolLibDownloadUrl(platform);
+        } else if (project.isLuckPerms()) {
             return getLuckPermsDownloadUrl(platform);
+        } else if (project.isPacketEvents()) {
+            return getPacketEventsDownloadUrl(platform);
         } else {
             // GeyserMC API (Geyser & Floodgate)
             return GEYSER_BASE + "/" + project.apiName() + "/versions/latest/builds/latest/downloads/" + platform.apiName();
@@ -167,6 +304,204 @@ public class UpdaterService {
             default:
                 return platform.apiName();
         }
+    }
+
+    private String getPacketEventsDownloadUrl(Platform platform) throws IOException {
+        // Check if using dev builds or stable releases (only if packetevents is enabled)
+        if (cfg.targets.packetevents.enabled && cfg.targets.packetevents.useDevBuilds) {
+            // Dev builds from Jenkins
+            return getPacketEventsJenkinsUrl(platform);
+        } else {
+            // Stable releases from GitHub
+            return getPacketEventsGitHubUrl(platform);
+        }
+    }
+
+    private String getPacketEventsJenkinsUrl(Platform platform) throws IOException {
+        // Fetch Jenkins API to get artifact name
+        String apiUrl = PACKETEVENTS_JENKINS + "/lastSuccessfulBuild/api/json";
+        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String body = resp.body();
+                String artifactFileName = extractPacketEventsArtifact(body, platform);
+                return PACKETEVENTS_JENKINS + "/lastSuccessfulBuild/artifact/build/libs/" + artifactFileName;
+            } else {
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching PacketEvents Jenkins API");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    private String getPacketEventsGitHubUrl(Platform platform) throws IOException {
+        // Fetch GitHub API to get latest release
+        HttpRequest req = HttpRequest.newBuilder(URI.create(PACKETEVENTS_GITHUB_API))
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String body = resp.body();
+                return extractPacketEventsGitHubAsset(body, platform);
+            } else {
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching PacketEvents GitHub API");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    private String extractPacketEventsGitHubAsset(String json, Platform platform) throws IOException {
+        // Get platform-specific artifact name
+        String platformName = mapPlatformToPacketEvents(platform);
+
+        // Parse GitHub API response to find the asset browser_download_url
+        // Example: "browser_download_url":"https://github.com/retrooper/packetevents/releases/download/v2.10.1/packetevents-spigot-2.10.1.jar"
+        String searchPattern = "\"browser_download_url\":\"https://github.com/retrooper/packetevents/releases/download/";
+        int startPos = json.indexOf(searchPattern);
+
+        while (startPos != -1) {
+            int urlStart = startPos + "\"browser_download_url\":\"".length();
+            int urlEnd = json.indexOf("\"", urlStart);
+            if (urlEnd == -1) break;
+
+            String url = json.substring(urlStart, urlEnd);
+            // Check if this URL is for our platform
+            if (url.contains("packetevents-" + platformName + "-") && url.endsWith(".jar")) {
+                return url;
+            }
+
+            // Look for next occurrence
+            startPos = json.indexOf(searchPattern, urlEnd);
+        }
+
+        throw new IOException("PacketEvents GitHub asset for platform " + platformName + " not found");
+    }
+
+    private String extractPacketEventsArtifact(String json, Platform platform) throws IOException {
+        // Get platform-specific artifact name
+        String platformName = mapPlatformToPacketEvents(platform);
+
+        // Look for artifact with pattern: packetevents-{platform}-{version}.jar
+        // We need to find the fileName in the artifacts array that matches our platform
+        String searchPattern = "\"fileName\":\"packetevents-" + platformName + "-";
+        int startIndex = json.indexOf(searchPattern);
+        if (startIndex == -1) {
+            throw new IOException("PacketEvents artifact for platform " + platformName + " not found");
+        }
+
+        // Extract the full filename
+        startIndex += "\"fileName\":\"".length();
+        int endIndex = json.indexOf("\"", startIndex);
+        if (endIndex == -1) {
+            throw new IOException("Invalid JSON format for PacketEvents artifact");
+        }
+
+        return json.substring(startIndex, endIndex);
+    }
+
+    private String mapPlatformToPacketEvents(Platform platform) {
+        // Map our platform names to PacketEvents artifact names
+        switch (platform) {
+            case SPIGOT:
+                return "spigot";
+            case BUNGEECORD:
+                return "bungeecord";
+            case VELOCITY:
+                return "velocity";
+            default:
+                return platform.apiName();
+        }
+    }
+
+    private String getProtocolLibDownloadUrl(Platform platform) throws IOException {
+        // ProtocolLib is Spigot only
+        if (platform != Platform.SPIGOT) {
+            throw new IOException("ProtocolLib is only available for Spigot");
+        }
+
+        // Check if using dev builds or stable releases (only if protocollib is enabled)
+        if (cfg.targets.protocollib.enabled && cfg.targets.protocollib.useDevBuilds) {
+            // Dev builds from "dev-build" tag on GitHub
+            return getProtocolLibDevBuildUrl();
+        } else {
+            // Stable releases from GitHub latest release
+            return getProtocolLibStableUrl();
+        }
+    }
+
+    private String getProtocolLibStableUrl() throws IOException {
+        // Fetch GitHub API to get latest stable release
+        String apiUrl = PROTOCOLLIB_GITHUB_API + "/releases/latest";
+        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String body = resp.body();
+                return extractProtocolLibAsset(body);
+            } else {
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching ProtocolLib GitHub API");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    private String getProtocolLibDevBuildUrl() throws IOException {
+        // Fetch GitHub API to get the "dev-build" tag/release
+        String apiUrl = PROTOCOLLIB_GITHUB_API + "/releases/tags/dev-build";
+        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String body = resp.body();
+                return extractProtocolLibAsset(body);
+            } else {
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching ProtocolLib dev-build tag");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    private String extractProtocolLibAsset(String json) throws IOException {
+        // Parse GitHub API response to find the JAR asset browser_download_url
+        // Example: "browser_download_url":"https://github.com/dmulloy2/ProtocolLib/releases/download/5.3.0/ProtocolLib.jar"
+        String searchPattern = "\"browser_download_url\":\"";
+        int startPos = json.indexOf(searchPattern);
+
+        while (startPos != -1) {
+            int urlStart = startPos + searchPattern.length();
+            int urlEnd = json.indexOf("\"", urlStart);
+            if (urlEnd == -1) break;
+
+            String url = json.substring(urlStart, urlEnd);
+            // Check if this URL is for ProtocolLib JAR
+            if (url.contains("ProtocolLib") && url.endsWith(".jar")) {
+                return url;
+            }
+
+            // Look for next occurrence
+            startPos = json.indexOf(searchPattern, urlEnd);
+        }
+
+        throw new IOException("ProtocolLib JAR asset not found in GitHub release");
     }
 
     private void downloadTo(String url, Path target) throws IOException {
@@ -237,6 +572,18 @@ public class UpdaterService {
                     case VELOCITY: filename = "LuckPerms-Velocity.jar"; break;
                     default: filename = "LuckPerms.jar";
                 }
+                break;
+            case PACKETEVENTS:
+                switch (platform) {
+                    case SPIGOT: filename = "packetevents-spigot.jar"; break;
+                    case BUNGEECORD: filename = "packetevents-bungeecord.jar"; break;
+                    case VELOCITY: filename = "packetevents-velocity.jar"; break;
+                    default: filename = "packetevents.jar";
+                }
+                break;
+            case PROTOCOLLIB:
+                // ProtocolLib is Spigot only
+                filename = "ProtocolLib.jar";
                 break;
             default:
                 filename = "plugin.jar";

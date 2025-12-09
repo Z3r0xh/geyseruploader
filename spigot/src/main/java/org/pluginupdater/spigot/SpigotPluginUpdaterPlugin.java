@@ -92,6 +92,79 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
         });
     }
 
+    private void runVersionCheck(CommandSender sender) {
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            sendTo(sender, cfg.messages.prefix + cfg.messages.versionCheckFetching);
+
+            UpdaterService service = new UpdaterService(new SpigotLogger(), cfg);
+            Path pluginsDir = getDataFolder().toPath().getParent();
+            List<org.pluginupdater.core.VersionInfo> versions = service.checkVersions(Platform.SPIGOT, pluginsDir);
+
+            // Display header
+            sendTo(sender, "");
+            sendTo(sender, cfg.messages.versionCheckHeader);
+            sendTo(sender, cfg.messages.versionCheckTitle);
+            sendTo(sender, cfg.messages.versionCheckHeader);
+            sendTo(sender, "");
+            sendTo(sender, cfg.messages.versionCheckColumnHeaders);
+            sendTo(sender, cfg.messages.versionCheckSeparator);
+
+            int enabledCount = 0;
+            int updatesCount = 0;
+
+            // Display each project
+            for (org.pluginupdater.core.VersionInfo info : versions) {
+                String projectName = formatProjectName(info.project.name());
+
+                if (!info.enabled) {
+                    sendTo(sender, cfg.messages.versionCheckDisabled.replace("{project}", projectName));
+                } else {
+                    enabledCount++;
+                    if (info.error.isPresent()) {
+                        sendTo(sender, cfg.messages.versionCheckError
+                                .replace("{project}", projectName)
+                                .replace("{error}", truncate(info.error.get(), 30)));
+                    } else if (!info.installedVersion.isPresent()) {
+                        updatesCount++;
+                        sendTo(sender, cfg.messages.versionCheckNotFound
+                                .replace("{project}", projectName)
+                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                    } else if (info.updateAvailable) {
+                        updatesCount++;
+                        sendTo(sender, cfg.messages.versionCheckUpdateAvailable
+                                .replace("{project}", projectName)
+                                .replace("{installed}", truncate(info.installedVersion.get(), 30))
+                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                    } else {
+                        sendTo(sender, cfg.messages.versionCheckUpToDate
+                                .replace("{project}", projectName)
+                                .replace("{installed}", truncate(info.installedVersion.get(), 30))
+                                .replace("{latest}", truncate(info.latestVersion.orElse("Unknown"), 30)));
+                    }
+                }
+            }
+
+            // Display footer
+            sendTo(sender, cfg.messages.versionCheckSeparator);
+            sendTo(sender, cfg.messages.versionCheckSummary
+                    .replace("{enabled}", String.valueOf(enabledCount))
+                    .replace("{updates}", String.valueOf(updatesCount)));
+            sendTo(sender, cfg.messages.versionCheckFooter);
+            sendTo(sender, "");
+        });
+    }
+
+    private String formatProjectName(String name) {
+        // Pad to 15 characters
+        if (name.length() >= 15) return name.substring(0, 15);
+        return name + " ".repeat(15 - name.length());
+    }
+
+    private String truncate(String str, int maxLength) {
+        if (str.length() <= maxLength) return str;
+        return str.substring(0, maxLength - 3) + "...";
+    }
+
     private void msg(CommandSender sender, String message) {
         if (sender != null) {
             sender.sendMessage(cfg.messages.prefix + message);
@@ -131,19 +204,28 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
             return true;
         }
 
-        // Check for reload subcommand
-        if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
-            if (!sender.hasPermission("pluginupdater.reload")) {
-                sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
+        // Check for subcommands
+        if (args.length > 0) {
+            if (args[0].equalsIgnoreCase("reload")) {
+                if (!sender.hasPermission("pluginupdater.reload")) {
+                    sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
+                    return true;
+                }
+                try {
+                    this.cfg = cfgMgr.loadOrCreateDefault();
+                    sender.sendMessage(cfg.messages.prefix + cfg.messages.reloadSuccess);
+                } catch (Exception e) {
+                    sender.sendMessage(cfg.messages.prefix + cfg.messages.reloadFailed.replace("{error}", e.getMessage()));
+                }
+                return true;
+            } else if (args[0].equalsIgnoreCase("check")) {
+                if (!sender.hasPermission("pluginupdater.check")) {
+                    sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
+                    return true;
+                }
+                runVersionCheck(sender);
                 return true;
             }
-            try {
-                this.cfg = cfgMgr.loadOrCreateDefault();
-                sender.sendMessage(cfg.messages.prefix + cfg.messages.reloadSuccess);
-            } catch (Exception e) {
-                sender.sendMessage(cfg.messages.prefix + cfg.messages.reloadFailed.replace("{error}", e.getMessage()));
-            }
-            return true;
         }
 
         runAsyncCheck(true, sender);
@@ -156,7 +238,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                 try (java.util.stream.Stream<java.nio.file.Path> s = java.nio.file.Files.list(nested)) {
                     s.filter(p -> {
                         String name = p.getFileName().toString().toLowerCase();
-                        return name.endsWith(".jar") && (name.contains("geyser") || name.contains("floodgate") || name.contains("luckperms"));
+                        return name.endsWith(".jar") && (name.contains("geyser") || name.contains("floodgate") || name.contains("luckperms") || name.contains("packetevents"));
                     }).forEach(p -> {
                         try {
                             java.nio.file.Path dest = correctPluginsDir.resolve(p.getFileName().toString());
