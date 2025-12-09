@@ -35,6 +35,12 @@
       <version>1.21-R0.3</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.bstats</groupId>
+      <artifactId>bstats-bungeecord</artifactId>
+      <version>3.1.0</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -60,6 +66,12 @@
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <minimizeJar>false</minimizeJar>
+              <relocations>
+                <relocation>
+                  <pattern>org.bstats</pattern>
+                  <shadedPattern>org.pluginupdater.bungee.bstats</shadedPattern>
+                </relocation>
+              </relocations>
             </configuration>
           </execution>
         </executions>

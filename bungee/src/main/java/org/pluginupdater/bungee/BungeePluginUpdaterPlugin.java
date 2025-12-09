@@ -9,6 +9,7 @@ import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.event.EventHandler;
+import org.bstats.bungeecord.Metrics;
 import org.pluginupdater.core.Config;
 import org.pluginupdater.core.ConfigManager;
 import org.pluginupdater.core.Platform;
@@ -39,6 +40,10 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
             getLogger().info(cfg.messages.pluginDisabled);
             return;
         }
+
+        // Initialize bStats
+        int pluginId = 28287;
+        Metrics metrics = new Metrics(this, pluginId);
 
         if (cfg.checkOnStartup) {
             info(cfg.messages.startUpCheck);
