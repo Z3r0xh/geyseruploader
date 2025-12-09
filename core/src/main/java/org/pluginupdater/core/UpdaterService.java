@@ -27,6 +27,8 @@ public class UpdaterService {
     private static final String GEYSERUTILS_GITHUB_API = "https://api.github.com/repos/GeyserExtensionists/GeyserUtils/releases/latest";
     private static final String GEYSERMODELENGINE_EXT_GITHUB_API = "https://api.github.com/repos/xSquishyLiam/mc-GeyserModelEnginePackGenerator-extension/releases/latest";
     private static final String GEYSERMODELENGINE_PLUGIN_GITHUB_API = "https://api.github.com/repos/xSquishyLiam/mc-GeyserModelEngine-plugin/releases/latest";
+    private static final String FAWE_JENKINS = "https://ci.athion.net/job/FastAsyncWorldEdit";
+    private static final String PLACEHOLDERAPI_GITHUB_API = "https://api.github.com/repos/PlaceholderAPI/PlaceholderAPI";
     private final HttpClient http;
     private final LogAdapter log;
     private final Config cfg;
@@ -129,6 +131,8 @@ public class UpdaterService {
         if (project == Project.GEYSER) return cfg.targets.geyser;
         if (project == Project.FLOODGATE) return cfg.targets.floodgate;
         if (project == Project.LUCKPERMS) return cfg.targets.luckperms;
+        if (project == Project.FAWE) return cfg.targets.fawe;
+        if (project == Project.PLACEHOLDERAPI) return cfg.targets.placeholderapi;
         if (project == Project.PACKETEVENTS) return cfg.targets.packetevents.enabled;
         if (project == Project.PROTOCOLLIB) return cfg.targets.protocollib.enabled;
         if (project == Project.VIAVERSION) return cfg.targets.viaPlugins.viaVersion;
@@ -137,7 +141,7 @@ public class UpdaterService {
         if (project == Project.VIAREWIND_LEGACY) return cfg.targets.viaPlugins.viaRewindLegacy;
         if (project == Project.GEYSERUTILS_EXTENSION) return cfg.targets.geyserExtensions.geyserUtils;
         if (project == Project.GEYSERUTILS_PLUGIN) return cfg.targets.geyserExtensions.geyserUtils;
-        if (project == Project.GEYSERMODELENGINE_EXTENSION) return cfg.targets.geyserExtensions.geyserModelEngine;
+        if (project == Project.GEYSERMODELENGINE_EXTENSION) return cfg.targets.geyserExtensions.geyserModelEnginePackGenerator;
         if (project == Project.GEYSERMODELENGINE_PLUGIN) return cfg.targets.geyserExtensions.geyserModelEngine;
         return false;
     }
@@ -217,9 +221,41 @@ public class UpdaterService {
                 Thread.currentThread().interrupt();
                 throw new IOException("Interrupted", e);
             }
+        } else if (project == Project.FAWE) {
+            // FAWE from Jenkins
+            if (platform != Platform.SPIGOT) {
+                throw new IOException("FAWE is only available for Spigot");
+            }
+            String apiUrl = FAWE_JENKINS + "/lastSuccessfulBuild/api/json";
+            HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+                    .timeout(Duration.ofSeconds(15))
+                    .GET()
+                    .build();
+            try {
+                HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+                if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                    String relativePath = extractFAWEArtifact(resp.body());
+                    // Extract just the filename from the path
+                    int lastSlash = relativePath.lastIndexOf('/');
+                    return lastSlash != -1 ? relativePath.substring(lastSlash + 1) : relativePath;
+                }
+                throw new IOException("Failed to fetch FAWE Jenkins version");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Interrupted", e);
+            }
+        } else if (project == Project.PLACEHOLDERAPI) {
+            // PlaceholderAPI from GitHub latest tag
+            if (platform != Platform.SPIGOT) {
+                throw new IOException("PlaceholderAPI is only available for Spigot");
+            }
+            String url = getPlaceholderAPIUrl();
+            int lastSlash = url.lastIndexOf('/');
+            return url.substring(lastSlash + 1);
         } else {
-            // Geyser/Floodgate - return build info
-            return "Latest build";
+            // Geyser/Floodgate - construct expected filename based on project and platform
+            String filename = defaultDestination(project, platform, null).getFileName().toString();
+            return filename;
         }
     }
 
@@ -239,13 +275,20 @@ public class UpdaterService {
         if (cfg.targets.viaPlugins.viaBackwards) targets.add(Project.VIABACKWARDS);
         if (cfg.targets.viaPlugins.viaRewind) targets.add(Project.VIAREWIND);
         if (cfg.targets.viaPlugins.viaRewindLegacy) targets.add(Project.VIAREWIND_LEGACY);
+        // FAWE and PlaceholderAPI are Spigot only
+        if (platform == Platform.SPIGOT) {
+            if (cfg.targets.fawe) targets.add(Project.FAWE);
+            if (cfg.targets.placeholderapi) targets.add(Project.PLACEHOLDERAPI);
+        }
         // Geyser extensions
         if (cfg.targets.geyserExtensions.geyserUtils) {
             targets.add(Project.GEYSERUTILS_EXTENSION);
             targets.add(Project.GEYSERUTILS_PLUGIN);
         }
-        if (cfg.targets.geyserExtensions.geyserModelEngine) {
+        if (cfg.targets.geyserExtensions.geyserModelEnginePackGenerator) {
             targets.add(Project.GEYSERMODELENGINE_EXTENSION);
+        }
+        if (cfg.targets.geyserExtensions.geyserModelEngine) {
             // Plugin is only for Spigot
             if (platform == Platform.SPIGOT) {
                 targets.add(Project.GEYSERMODELENGINE_PLUGIN);
@@ -292,16 +335,20 @@ public class UpdaterService {
 
             // Determine destination
             Path dest;
-            if (existing != null) {
-                dest = existing;
+            // For Geyser/Floodgate, always use default naming since API doesn't provide filename
+            // For others, extract filename from URL to preserve version information
+            if (project == Project.GEYSER || project == Project.FLOODGATE) {
+                dest = defaultDestination(project, platform, targetDir);
+                // If we're updating and the old file exists with a different name, delete it
+                if (existing != null && !existing.equals(dest)) {
+                    Files.deleteIfExists(existing);
+                }
             } else {
-                // For Geyser/Floodgate, use default naming since API doesn't provide filename
-                // For others, extract filename from URL to preserve version information
-                if (project == Project.GEYSER || project == Project.FLOODGATE) {
-                    dest = defaultDestination(project, platform, targetDir);
-                } else {
-                    String filename = extractFilenameFromUrl(downloadUrl);
-                    dest = targetDir.resolve(filename);
+                String filename = extractFilenameFromUrl(downloadUrl);
+                dest = targetDir.resolve(filename);
+                // If existing file exists with a different name, delete it before moving new one
+                if (existing != null && !existing.equals(dest)) {
+                    Files.deleteIfExists(existing);
                 }
             }
             // Move atomically
@@ -324,6 +371,10 @@ public class UpdaterService {
             return getLuckPermsDownloadUrl(platform);
         } else if (project.isPacketEvents()) {
             return getPacketEventsDownloadUrl(platform);
+        } else if (project == Project.FAWE) {
+            return getFAWEDownloadUrl(platform);
+        } else if (project == Project.PLACEHOLDERAPI) {
+            return getPlaceholderAPIUrl();
         } else {
             // GeyserMC API (Geyser & Floodgate)
             return GEYSER_BASE + "/" + project.apiName() + "/versions/latest/builds/latest/downloads/" + platform.apiName();
@@ -626,7 +677,7 @@ public class UpdaterService {
                 break;
             case GEYSERMODELENGINE_EXTENSION:
                 apiUrl = GEYSERMODELENGINE_EXT_GITHUB_API;
-                fileNameHint = "GeyserModelEngine";
+                fileNameHint = "GeyserModelEnginePackGenerator";
                 break;
             case GEYSERMODELENGINE_PLUGIN:
                 // Plugin is Spigot only
@@ -746,6 +797,99 @@ public class UpdaterService {
         throw new IOException(project.name() + " artifact not found in Jenkins build");
     }
 
+    private String getFAWEDownloadUrl(Platform platform) throws IOException {
+        // FAWE is Spigot only
+        if (platform != Platform.SPIGOT) {
+            throw new IOException("FAWE is only available for Spigot");
+        }
+
+        // Fetch Jenkins API to get artifact name
+        String apiUrl = FAWE_JENKINS + "/lastSuccessfulBuild/api/json";
+        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String body = resp.body();
+                String artifactFileName = extractFAWEArtifact(body);
+                return FAWE_JENKINS + "/lastSuccessfulBuild/artifact/" + artifactFileName;
+            } else {
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching FAWE Jenkins API");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    private String extractFAWEArtifact(String json) throws IOException {
+        // Look for artifact with relativePath that contains "Paper" (the main FAWE version)
+        // Example: "relativePath":"worldedit-bukkit/build/libs/FastAsyncWorldEdit-Paper-2.14.3.jar"
+        String searchPattern = "\"relativePath\":\"";
+        int startIndex = json.indexOf(searchPattern);
+
+        while (startIndex != -1) {
+            int pathStart = startIndex + searchPattern.length();
+            int pathEnd = json.indexOf("\"", pathStart);
+            if (pathEnd == -1) break;
+
+            String relativePath = json.substring(pathStart, pathEnd);
+            // Check if this is the Paper JAR file (main version for Paper/Spigot)
+            if (relativePath.contains("FastAsyncWorldEdit-Paper-") &&
+                relativePath.endsWith(".jar") &&
+                !relativePath.contains("javadoc") &&
+                !relativePath.contains("sources")) {
+                return relativePath;
+            }
+
+            // Look for next occurrence
+            startIndex = json.indexOf(searchPattern, pathEnd);
+        }
+
+        throw new IOException("FAWE Paper artifact not found in Jenkins build");
+    }
+
+    private String getPlaceholderAPIUrl() throws IOException {
+        // Fetch GitHub API to get latest tag
+        String apiUrl = PLACEHOLDERAPI_GITHUB_API + "/tags";
+        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String body = resp.body();
+                // Extract the latest tag name (first in the array)
+                String latestTag = extractLatestTag(body);
+                // Build download URL: https://github.com/PlaceholderAPI/PlaceholderAPI/releases/download/{tag}/PlaceholderAPI-{tag}.jar
+                return "https://github.com/PlaceholderAPI/PlaceholderAPI/releases/download/" + latestTag + "/PlaceholderAPI-" + latestTag + ".jar";
+            } else {
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching PlaceholderAPI tags");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    private String extractLatestTag(String json) throws IOException {
+        // Parse the first tag from the tags array
+        // Example: [{"name":"2.11.6",...}]
+        String searchPattern = "\"name\":\"";
+        int startPos = json.indexOf(searchPattern);
+        if (startPos != -1) {
+            int tagStart = startPos + searchPattern.length();
+            int tagEnd = json.indexOf("\"", tagStart);
+            if (tagEnd != -1) {
+                return json.substring(tagStart, tagEnd);
+            }
+        }
+        throw new IOException("Could not find latest PlaceholderAPI tag");
+    }
+
     private Path findGeyserExtensionsFolder(Platform platform, Path pluginsDir) throws IOException {
         // Find the Geyser folder based on platform
         String geyserFolderName;
@@ -800,11 +944,12 @@ public class UpdaterService {
     private Path findExistingJar(Project project, Path pluginsDir) throws IOException {
         if (!Files.exists(pluginsDir)) return null;
         try {
+            String fileHintLower = project.fileHint().toLowerCase(Locale.ROOT);
             List<Path> matches = Files.list(pluginsDir)
                     .filter(p -> {
                         String name = p.getFileName().toString().toLowerCase(Locale.ROOT);
                         return name.endsWith(".jar") &&
-                                name.contains(project.fileHint());
+                                name.contains(fileHintLower);
                     })
                     .collect(Collectors.toList());
             if (matches.isEmpty()) return null;
@@ -904,6 +1049,14 @@ public class UpdaterService {
             case GEYSERMODELENGINE_PLUGIN:
                 // GeyserModelEngine plugin - Spigot only
                 filename = "GeyserModelEngine-Plugin.jar";
+                break;
+            case FAWE:
+                // FAWE is Spigot only
+                filename = "FastAsyncWorldEdit.jar";
+                break;
+            case PLACEHOLDERAPI:
+                // PlaceholderAPI is Spigot only
+                filename = "PlaceholderAPI.jar";
                 break;
             default:
                 filename = "plugin.jar";
