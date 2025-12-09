@@ -20,6 +20,10 @@ public class UpdaterService {
     private static final String PACKETEVENTS_JENKINS = "https://ci.codemc.io/job/retrooper/job/packetevents";
     private static final String PACKETEVENTS_GITHUB_API = "https://api.github.com/repos/retrooper/packetevents/releases/latest";
     private static final String PROTOCOLLIB_GITHUB_API = "https://api.github.com/repos/dmulloy2/ProtocolLib";
+    private static final String VIAVERSION_JENKINS = "https://ci.viaversion.com/job/ViaVersion";
+    private static final String VIABACKWARDS_JENKINS = "https://ci.viaversion.com/job/ViaBackwards";
+    private static final String VIAREWIND_JENKINS = "https://ci.viaversion.com/job/ViaRewind";
+    private static final String VIAREWIND_LEGACY_JENKINS = "https://ci.viaversion.com/job/ViaRewind%20Legacy%20Support";
     private final HttpClient http;
     private final LogAdapter log;
     private final Config cfg;
@@ -111,11 +115,23 @@ public class UpdaterService {
         if (project == Project.LUCKPERMS) return cfg.targets.luckperms;
         if (project == Project.PACKETEVENTS) return cfg.targets.packetevents.enabled;
         if (project == Project.PROTOCOLLIB) return cfg.targets.protocollib.enabled;
+        if (project == Project.VIAVERSION) return cfg.targets.viaPlugins.viaVersion;
+        if (project == Project.VIABACKWARDS) return cfg.targets.viaPlugins.viaBackwards;
+        if (project == Project.VIAREWIND) return cfg.targets.viaPlugins.viaRewind;
+        if (project == Project.VIAREWIND_LEGACY) return cfg.targets.viaPlugins.viaRewindLegacy;
         return false;
     }
 
     private String getLatestVersionString(Project project, Platform platform) throws IOException {
-        if (project.isProtocolLib()) {
+        if (project.isViaPlugin()) {
+            // VIA plugins are Spigot only
+            if (platform != Platform.SPIGOT) {
+                throw new IOException("VIA plugins are only available for Spigot");
+            }
+            String url = getViaPluginDownloadUrl(project);
+            int lastSlash = url.lastIndexOf('/');
+            return url.substring(lastSlash + 1);
+        } else if (project.isProtocolLib()) {
             // ProtocolLib is Spigot only
             if (platform != Platform.SPIGOT) {
                 throw new IOException("ProtocolLib is only available for Spigot");
@@ -195,6 +211,10 @@ public class UpdaterService {
         if (cfg.targets.luckperms) targets.add(Project.LUCKPERMS);
         if (cfg.targets.packetevents.enabled) targets.add(Project.PACKETEVENTS);
         if (cfg.targets.protocollib.enabled) targets.add(Project.PROTOCOLLIB);
+        if (cfg.targets.viaPlugins.viaVersion) targets.add(Project.VIAVERSION);
+        if (cfg.targets.viaPlugins.viaBackwards) targets.add(Project.VIABACKWARDS);
+        if (cfg.targets.viaPlugins.viaRewind) targets.add(Project.VIAREWIND);
+        if (cfg.targets.viaPlugins.viaRewindLegacy) targets.add(Project.VIAREWIND_LEGACY);
         return targets;
     }
 
@@ -238,7 +258,9 @@ public class UpdaterService {
     }
 
     private String buildDownloadUrl(Project project, Platform platform) throws IOException {
-        if (project.isProtocolLib()) {
+        if (project.isViaPlugin()) {
+            return getViaPluginDownloadUrl(project);
+        } else if (project.isProtocolLib()) {
             return getProtocolLibDownloadUrl(platform);
         } else if (project.isLuckPerms()) {
             return getLuckPermsDownloadUrl(platform);
@@ -504,6 +526,70 @@ public class UpdaterService {
         throw new IOException("ProtocolLib JAR asset not found in GitHub release");
     }
 
+    private String getViaPluginDownloadUrl(Project project) throws IOException {
+        String jenkinsUrl;
+        switch (project) {
+            case VIAVERSION:
+                jenkinsUrl = VIAVERSION_JENKINS;
+                break;
+            case VIABACKWARDS:
+                jenkinsUrl = VIABACKWARDS_JENKINS;
+                break;
+            case VIAREWIND:
+                jenkinsUrl = VIAREWIND_JENKINS;
+                break;
+            case VIAREWIND_LEGACY:
+                jenkinsUrl = VIAREWIND_LEGACY_JENKINS;
+                break;
+            default:
+                throw new IOException("Unknown VIA plugin: " + project.name());
+        }
+
+        // Fetch Jenkins API to get artifact name
+        String apiUrl = jenkinsUrl + "/lastSuccessfulBuild/api/json";
+        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String body = resp.body();
+                String artifactFileName = extractViaPluginArtifact(body, project);
+                return jenkinsUrl + "/lastSuccessfulBuild/artifact/build/libs/" + artifactFileName;
+            } else {
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching " + project.name() + " Jenkins API");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    private String extractViaPluginArtifact(String json, Project project) throws IOException {
+        // Look for artifact fileName in the Jenkins API response
+        // The artifact name varies but should contain the project name
+        String searchPattern = "\"fileName\":\"";
+        int startIndex = json.indexOf(searchPattern);
+
+        while (startIndex != -1) {
+            startIndex += searchPattern.length();
+            int endIndex = json.indexOf("\"", startIndex);
+            if (endIndex == -1) break;
+
+            String fileName = json.substring(startIndex, endIndex);
+            // Check if this is the JAR file we want
+            if (fileName.endsWith(".jar") && !fileName.contains("javadoc") && !fileName.contains("sources")) {
+                return fileName;
+            }
+
+            // Look for next occurrence
+            startIndex = json.indexOf(searchPattern, endIndex);
+        }
+
+        throw new IOException(project.name() + " artifact not found in Jenkins build");
+    }
+
     private void downloadTo(String url, Path target) throws IOException {
         HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                 .timeout(Duration.ofSeconds(60))
@@ -584,6 +670,22 @@ public class UpdaterService {
             case PROTOCOLLIB:
                 // ProtocolLib is Spigot only
                 filename = "ProtocolLib.jar";
+                break;
+            case VIAVERSION:
+                // ViaVersion is Spigot only
+                filename = "ViaVersion.jar";
+                break;
+            case VIABACKWARDS:
+                // ViaBackwards is Spigot only
+                filename = "ViaBackwards.jar";
+                break;
+            case VIAREWIND:
+                // ViaRewind is Spigot only
+                filename = "ViaRewind.jar";
+                break;
+            case VIAREWIND_LEGACY:
+                // ViaRewind Legacy Support is Spigot only
+                filename = "ViaRewind-Legacy-Support.jar";
                 break;
             default:
                 filename = "plugin.jar";

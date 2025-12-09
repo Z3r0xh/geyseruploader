@@ -21,6 +21,11 @@ targets:
   protocollib:
     enabled: false
     useDevBuilds: false  # false = stable releases from GitHub, true = dev builds from "dev-build" tag
+  viaPlugins:
+    viaVersion: false
+    viaBackwards: false
+    viaRewind: false
+    viaRewindLegacy: false
 postUpdate:
   notifyConsole: true
   notifyPlayersWithPermission: true

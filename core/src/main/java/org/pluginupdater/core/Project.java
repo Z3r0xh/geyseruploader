@@ -5,7 +5,11 @@ public enum Project {
     FLOODGATE("floodgate", "floodgate"),
     LUCKPERMS("luckperms", "luckperms"),
     PACKETEVENTS("packetevents", "packetevents"),
-    PROTOCOLLIB("protocollib", "ProtocolLib");
+    PROTOCOLLIB("protocollib", "ProtocolLib"),
+    VIAVERSION("viaversion", "ViaVersion"),
+    VIABACKWARDS("viabackwards", "ViaBackwards"),
+    VIAREWIND("viarewind", "ViaRewind"),
+    VIAREWIND_LEGACY("viarewind-legacy", "ViaRewind-Legacy-Support");
 
     private final String apiName;
     private final String fileHint;
@@ -29,5 +33,9 @@ public enum Project {
 
     public boolean isProtocolLib() {
         return this == PROTOCOLLIB;
+    }
+
+    public boolean isViaPlugin() {
+        return this == VIAVERSION || this == VIABACKWARDS || this == VIAREWIND || this == VIAREWIND_LEGACY;
     }
 }

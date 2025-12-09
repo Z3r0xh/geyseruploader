@@ -26,6 +26,7 @@ public class Config {
         public boolean luckperms = false;  // Default false, opt-in
         public PacketEventsConfig packetevents = new PacketEventsConfig();
         public ProtocolLibConfig protocollib = new ProtocolLibConfig();
+        public ViaPluginsConfig viaPlugins = new ViaPluginsConfig();
     }
 
     public static class PacketEventsConfig {
@@ -36,6 +37,13 @@ public class Config {
     public static class ProtocolLibConfig {
         public boolean enabled = false;  // Default false, opt-in (Spigot only)
         public boolean useDevBuilds = false;  // Default false = stable releases from GitHub, true = dev builds from "dev-build" tag
+    }
+
+    public static class ViaPluginsConfig {
+        public boolean viaVersion = false;  // Default false, opt-in (Spigot only)
+        public boolean viaBackwards = false;  // Default false, opt-in (Spigot only)
+        public boolean viaRewind = false;  // Default false, opt-in (Spigot only)
+        public boolean viaRewindLegacy = false;  // Default false, opt-in (Spigot only)
     }
 
     public PostUpdate postUpdate = new PostUpdate();

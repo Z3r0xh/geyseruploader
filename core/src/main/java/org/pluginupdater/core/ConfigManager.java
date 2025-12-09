@@ -86,6 +86,13 @@ public class ConfigManager {
             cfg.targets.protocollib.enabled = asBool(protocollib, "enabled", cfg.targets.protocollib.enabled);
             cfg.targets.protocollib.useDevBuilds = asBool(protocollib, "useDevBuilds", cfg.targets.protocollib.useDevBuilds);
 
+            // viaPlugins nested config
+            Map<String, Object> viaPlugins = asMap(targets, "viaPlugins");
+            cfg.targets.viaPlugins.viaVersion = asBool(viaPlugins, "viaVersion", cfg.targets.viaPlugins.viaVersion);
+            cfg.targets.viaPlugins.viaBackwards = asBool(viaPlugins, "viaBackwards", cfg.targets.viaPlugins.viaBackwards);
+            cfg.targets.viaPlugins.viaRewind = asBool(viaPlugins, "viaRewind", cfg.targets.viaPlugins.viaRewind);
+            cfg.targets.viaPlugins.viaRewindLegacy = asBool(viaPlugins, "viaRewindLegacy", cfg.targets.viaPlugins.viaRewindLegacy);
+
             // postUpdate
             Map<String, Object> postUpdate = asMap(map, "postUpdate");
             cfg.postUpdate.notifyConsole = asBool(postUpdate, "notifyConsole", cfg.postUpdate.notifyConsole);
