@@ -98,7 +98,21 @@ public class ConfigManager {
             // geyserExtensions nested config
             Map<String, Object> geyserExtensions = asMap(targets, "geyserExtensions");
             cfg.targets.geyserExtensions.geyserUtils = asBool(geyserExtensions, "geyserUtils", cfg.targets.geyserExtensions.geyserUtils);
-            cfg.targets.geyserExtensions.geyserModelEnginePackGenerator = asBool(geyserExtensions, "geyserModelEnginePackGenerator", cfg.targets.geyserExtensions.geyserModelEnginePackGenerator);
+
+            // geyserModelEnginePackGenerator can be boolean (legacy) or object (new)
+            Object gmepg = geyserExtensions.get("geyserModelEnginePackGenerator");
+            if (gmepg instanceof Boolean) {
+                // Legacy boolean format
+                cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled = (Boolean) gmepg;
+            } else if (gmepg instanceof Map) {
+                // New object format
+                Map<String, Object> gmepgMap = asMap(geyserExtensions, "geyserModelEnginePackGenerator");
+                cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled =
+                    asBool(gmepgMap, "enabled", cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled);
+                cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate =
+                    asBool(gmepgMap, "cleanOnUpdate", cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate);
+            }
+
             cfg.targets.geyserExtensions.geyserModelEngine = asBool(geyserExtensions, "geyserModelEngine", cfg.targets.geyserExtensions.geyserModelEngine);
 
             // postUpdate

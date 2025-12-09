@@ -30,7 +30,9 @@ targets:
     viaRewindLegacy: false
   geyserExtensions:
     geyserUtils: false  # Downloads extension + plugin for all platforms
-    geyserModelEnginePackGenerator: false  # Downloads GeyserModelEnginePackGenerator extension (all platforms)
+    geyserModelEnginePackGenerator:
+      enabled: false  # Downloads GeyserModelEnginePackGenerator extension (all platforms)
+      cleanOnUpdate: true  # Clean extension folder on update (preserves input/ folder)
     geyserModelEngine: false  # Downloads GeyserModelEngine plugin (Spigot only)
 postUpdate:
   notifyConsole: true

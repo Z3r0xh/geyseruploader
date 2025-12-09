@@ -141,7 +141,7 @@ public class UpdaterService {
         if (project == Project.VIAREWIND_LEGACY) return cfg.targets.viaPlugins.viaRewindLegacy;
         if (project == Project.GEYSERUTILS_EXTENSION) return cfg.targets.geyserExtensions.geyserUtils;
         if (project == Project.GEYSERUTILS_PLUGIN) return cfg.targets.geyserExtensions.geyserUtils;
-        if (project == Project.GEYSERMODELENGINE_EXTENSION) return cfg.targets.geyserExtensions.geyserModelEnginePackGenerator;
+        if (project == Project.GEYSERMODELENGINE_EXTENSION) return cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled;
         if (project == Project.GEYSERMODELENGINE_PLUGIN) return cfg.targets.geyserExtensions.geyserModelEngine;
         return false;
     }
@@ -284,7 +284,7 @@ public class UpdaterService {
             targets.add(Project.GEYSERUTILS_EXTENSION);
             targets.add(Project.GEYSERUTILS_PLUGIN);
         }
-        if (cfg.targets.geyserExtensions.geyserModelEnginePackGenerator) {
+        if (cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled) {
             targets.add(Project.GEYSERMODELENGINE_EXTENSION);
         }
         if (cfg.targets.geyserExtensions.geyserModelEngine) {

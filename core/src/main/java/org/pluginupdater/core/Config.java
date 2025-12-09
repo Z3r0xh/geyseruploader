@@ -51,8 +51,13 @@ public class Config {
 
     public static class GeyserExtensionsConfig {
         public boolean geyserUtils = false;  // Default false, opt-in (downloads both extension + plugin)
-        public boolean geyserModelEnginePackGenerator = false;  // Default false, opt-in (downloads extension for all platforms)
+        public GeyserModelEnginePackGeneratorConfig geyserModelEnginePackGenerator = new GeyserModelEnginePackGeneratorConfig();
         public boolean geyserModelEngine = false;  // Default false, opt-in (downloads plugin for Spigot only)
+    }
+
+    public static class GeyserModelEnginePackGeneratorConfig {
+        public boolean enabled = false;  // Default false, opt-in
+        public boolean cleanOnUpdate = true;  // Clean extension folder on update (except input/)
     }
 
     public PostUpdate postUpdate = new PostUpdate();
