@@ -1,5 +1,6 @@
 package org.pluginupdater.spigot;
 
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -38,6 +39,10 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
             getLogger().info(cfg.messages.pluginDisabled);
             return;
         }
+
+        // Initialize bStats
+        int pluginId = 28286;
+        Metrics metrics = new Metrics(this, pluginId);
 
         if (cfg.checkOnStartup) {
             info(cfg.messages.startUpCheck);
