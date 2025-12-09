@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class UpdaterService {
+    private static final String USER_AGENT = "PluginUpdater/1.0.0 (https://github.com/yourusername/pluginupdater)";
     private static final String GEYSER_BASE = "https://download.geysermc.org/v2/projects";
     private static final String LUCKPERMS_API = "https://metadata.luckperms.net/data/downloads";
     private static final String PACKETEVENTS_JENKINS = "https://ci.codemc.io/job/retrooper/job/packetevents";
@@ -181,7 +182,7 @@ public class UpdaterService {
             if (cfg.targets.packetevents.enabled && cfg.targets.packetevents.useDevBuilds) {
                 // Get from Jenkins artifact name
                 String apiUrl = PACKETEVENTS_JENKINS + "/lastSuccessfulBuild/api/json";
-                HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+                HttpRequest req = createRequestBuilder(apiUrl)
                         .timeout(Duration.ofSeconds(15))
                         .GET()
                         .build();
@@ -204,7 +205,7 @@ public class UpdaterService {
             }
         } else if (project.isLuckPerms()) {
             // Get from LuckPerms API
-            HttpRequest req = HttpRequest.newBuilder(URI.create(LUCKPERMS_API))
+            HttpRequest req = createRequestBuilder(LUCKPERMS_API)
                     .timeout(Duration.ofSeconds(15))
                     .GET()
                     .build();
@@ -227,7 +228,7 @@ public class UpdaterService {
                 throw new IOException("FAWE is only available for Spigot");
             }
             String apiUrl = FAWE_JENKINS + "/lastSuccessfulBuild/api/json";
-            HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+            HttpRequest req = createRequestBuilder(apiUrl)
                     .timeout(Duration.ofSeconds(15))
                     .GET()
                     .build();
@@ -387,7 +388,7 @@ public class UpdaterService {
 
     private String getLuckPermsDownloadUrl(Platform platform) throws IOException {
         // Fetch the LuckPerms metadata API to get download URLs
-        HttpRequest req = HttpRequest.newBuilder(URI.create(LUCKPERMS_API))
+        HttpRequest req = createRequestBuilder(LUCKPERMS_API)
                 .timeout(Duration.ofSeconds(15))
                 .GET()
                 .build();
@@ -455,7 +456,7 @@ public class UpdaterService {
     private String getPacketEventsJenkinsUrl(Platform platform) throws IOException {
         // Fetch Jenkins API to get artifact name
         String apiUrl = PACKETEVENTS_JENKINS + "/lastSuccessfulBuild/api/json";
-        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+        HttpRequest req = createRequestBuilder(apiUrl)
                 .timeout(Duration.ofSeconds(15))
                 .GET()
                 .build();
@@ -476,7 +477,7 @@ public class UpdaterService {
 
     private String getPacketEventsGitHubUrl(Platform platform) throws IOException {
         // Fetch GitHub API to get latest release
-        HttpRequest req = HttpRequest.newBuilder(URI.create(PACKETEVENTS_GITHUB_API))
+        HttpRequest req = createRequestBuilder(PACKETEVENTS_GITHUB_API)
                 .timeout(Duration.ofSeconds(15))
                 .GET()
                 .build();
@@ -590,7 +591,7 @@ public class UpdaterService {
     private String getProtocolLibStableUrl() throws IOException {
         // Fetch GitHub API to get latest stable release
         String apiUrl = PROTOCOLLIB_GITHUB_API + "/releases/latest";
-        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+        HttpRequest req = createRequestBuilder(apiUrl)
                 .timeout(Duration.ofSeconds(15))
                 .GET()
                 .build();
@@ -611,7 +612,7 @@ public class UpdaterService {
     private String getProtocolLibDevBuildUrl() throws IOException {
         // Fetch GitHub API to get the "dev-build" tag/release
         String apiUrl = PROTOCOLLIB_GITHUB_API + "/releases/tags/dev-build";
-        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+        HttpRequest req = createRequestBuilder(apiUrl)
                 .timeout(Duration.ofSeconds(15))
                 .GET()
                 .build();
@@ -696,7 +697,7 @@ public class UpdaterService {
         }
 
         // Fetch GitHub API to get latest release
-        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+        HttpRequest req = createRequestBuilder(apiUrl)
                 .timeout(Duration.ofSeconds(15))
                 .GET()
                 .build();
@@ -758,7 +759,7 @@ public class UpdaterService {
 
         // Fetch Jenkins API to get artifact name
         String apiUrl = jenkinsUrl + "/lastSuccessfulBuild/api/json";
-        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+        HttpRequest req = createRequestBuilder(apiUrl)
                 .timeout(Duration.ofSeconds(15))
                 .GET()
                 .build();
@@ -809,7 +810,7 @@ public class UpdaterService {
 
         // Fetch Jenkins API to get artifact name
         String apiUrl = FAWE_JENKINS + "/lastSuccessfulBuild/api/json";
-        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+        HttpRequest req = createRequestBuilder(apiUrl)
                 .timeout(Duration.ofSeconds(15))
                 .GET()
                 .build();
@@ -858,7 +859,7 @@ public class UpdaterService {
     private String getPlaceholderAPIUrl() throws IOException {
         // Fetch GitHub API to get latest tag
         String apiUrl = PLACEHOLDERAPI_GITHUB_API + "/tags";
-        HttpRequest req = HttpRequest.newBuilder(URI.create(apiUrl))
+        HttpRequest req = createRequestBuilder(apiUrl)
                 .timeout(Duration.ofSeconds(15))
                 .GET()
                 .build();
@@ -1053,8 +1054,16 @@ public class UpdaterService {
             });
     }
 
+    /**
+     * Create an HTTP request builder with standard headers
+     */
+    private HttpRequest.Builder createRequestBuilder(String url) {
+        return HttpRequest.newBuilder(URI.create(url))
+                .header("User-Agent", USER_AGENT);
+    }
+
     private void downloadTo(String url, Path target) throws IOException {
-        HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+        HttpRequest req = createRequestBuilder(url)
                 .timeout(Duration.ofSeconds(60))
                 .GET()
                 .build();
