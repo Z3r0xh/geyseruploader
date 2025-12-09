@@ -5,6 +5,11 @@ enabled: true
 # Language file to use (en, es, ja, de, fr, zh)
 # Available languages: English (en), Spanish (es), Japanese (ja), German (de), French (fr), Chinese (zh)
 language: en
+# Optional: GitHub Personal Access Token for increased API rate limits
+# Without token: 60 requests/hour | With token: 5000 requests/hour
+# Create token at: https://github.com/settings/tokens (no scopes needed, just public access)
+# Leave empty to use unauthenticated requests
+githubToken: ""
 checkOnStartup: true
 periodic:
   enabled: true

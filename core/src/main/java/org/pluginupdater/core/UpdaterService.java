@@ -1058,8 +1058,15 @@ public class UpdaterService {
      * Create an HTTP request builder with standard headers
      */
     private HttpRequest.Builder createRequestBuilder(String url) {
-        return HttpRequest.newBuilder(URI.create(url))
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
                 .header("User-Agent", USER_AGENT);
+
+        // Add GitHub token if configured (for GitHub API requests)
+        if (cfg.githubToken != null && !cfg.githubToken.trim().isEmpty() && url.contains("api.github.com")) {
+            builder.header("Authorization", "Bearer " + cfg.githubToken.trim());
+        }
+
+        return builder;
     }
 
     private void downloadTo(String url, Path target) throws IOException {

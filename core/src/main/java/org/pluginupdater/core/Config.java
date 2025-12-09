@@ -9,6 +9,10 @@ public class Config {
 
     public String language = "en";
 
+    // Optional GitHub token for increased API rate limits (5000/hour vs 60/hour)
+    // Leave empty to use unauthenticated requests
+    public String githubToken = "";
+
     public boolean checkOnStartup = true;
 
     public Periodic periodic = new Periodic();

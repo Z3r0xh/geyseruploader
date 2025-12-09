@@ -67,6 +67,7 @@ public class ConfigManager {
             // Level 1
             cfg.enabled = asBool(map, "enabled", cfg.enabled);
             cfg.language = asStr(map, "language", cfg.language);
+            cfg.githubToken = asStr(map, "githubToken", cfg.githubToken);
             cfg.checkOnStartup = asBool(map, "checkOnStartup", cfg.checkOnStartup);
 
             // periodic

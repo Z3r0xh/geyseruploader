@@ -1,6 +1,7 @@
 org\pluginupdater\core\Config$GeyserExtensionsConfig.class
 org\pluginupdater\core\Config$ViaPluginsConfig.class
 org\pluginupdater\core\Config$Targets.class
+org\pluginupdater\core\Config$GeyserModelEnginePackGeneratorConfig.class
 org\pluginupdater\core\Config$PostUpdate.class
 org\pluginupdater\core\util\FileUtils.class
 org\pluginupdater\core\ConfigManager.class
