@@ -254,8 +254,7 @@ public class UpdaterService {
             return url.substring(lastSlash + 1);
         } else {
             // Geyser/Floodgate - construct expected filename based on project and platform
-            String filename = defaultDestination(project, platform, null).getFileName().toString();
-            return filename;
+            return getDefaultFilename(project, platform);
         }
     }
 
@@ -974,7 +973,7 @@ public class UpdaterService {
         return "plugin.jar";
     }
 
-    private Path defaultDestination(Project project, Platform platform, Path pluginsDir) {
+    private String getDefaultFilename(Project project, Platform platform) {
         String filename;
         switch (project) {
             case GEYSER:
@@ -1010,31 +1009,24 @@ public class UpdaterService {
                 }
                 break;
             case PROTOCOLLIB:
-                // ProtocolLib is Spigot only
                 filename = "ProtocolLib.jar";
                 break;
             case VIAVERSION:
-                // ViaVersion is Spigot only
                 filename = "ViaVersion.jar";
                 break;
             case VIABACKWARDS:
-                // ViaBackwards is Spigot only
                 filename = "ViaBackwards.jar";
                 break;
             case VIAREWIND:
-                // ViaRewind is Spigot only
                 filename = "ViaRewind.jar";
                 break;
             case VIAREWIND_LEGACY:
-                // ViaRewind Legacy Support is Spigot only
                 filename = "ViaRewind-Legacy-Support.jar";
                 break;
             case GEYSERUTILS_EXTENSION:
-                // GeyserUtils extension - same for all platforms
                 filename = "geyserutils-geyser.jar";
                 break;
             case GEYSERUTILS_PLUGIN:
-                // GeyserUtils plugin - platform-specific
                 switch (platform) {
                     case SPIGOT: filename = "geyserutils-spigot.jar"; break;
                     case BUNGEECORD: filename = "geyserutils-bungee.jar"; break;
@@ -1043,24 +1035,25 @@ public class UpdaterService {
                 }
                 break;
             case GEYSERMODELENGINE_EXTENSION:
-                // GeyserModelEngine extension - same for all platforms
                 filename = "GeyserModelEngine-Extension.jar";
                 break;
             case GEYSERMODELENGINE_PLUGIN:
-                // GeyserModelEngine plugin - Spigot only
                 filename = "GeyserModelEngine-Plugin.jar";
                 break;
             case FAWE:
-                // FAWE is Spigot only
                 filename = "FastAsyncWorldEdit.jar";
                 break;
             case PLACEHOLDERAPI:
-                // PlaceholderAPI is Spigot only
                 filename = "PlaceholderAPI.jar";
                 break;
             default:
                 filename = "plugin.jar";
         }
+        return filename;
+    }
+
+    private Path defaultDestination(Project project, Platform platform, Path pluginsDir) {
+        String filename = getDefaultFilename(project, platform);
         return pluginsDir.resolve(filename);
     }
 }
