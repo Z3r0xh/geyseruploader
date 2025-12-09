@@ -295,9 +295,14 @@ public class UpdaterService {
             if (existing != null) {
                 dest = existing;
             } else {
-                // Extract filename from download URL to preserve version information
-                String filename = extractFilenameFromUrl(downloadUrl);
-                dest = targetDir.resolve(filename);
+                // For Geyser/Floodgate, use default naming since API doesn't provide filename
+                // For others, extract filename from URL to preserve version information
+                if (project == Project.GEYSER || project == Project.FLOODGATE) {
+                    dest = defaultDestination(project, platform, targetDir);
+                } else {
+                    String filename = extractFilenameFromUrl(downloadUrl);
+                    dest = targetDir.resolve(filename);
+                }
             }
             // Move atomically
             FileUtils.atomicMove(tmp, dest);
