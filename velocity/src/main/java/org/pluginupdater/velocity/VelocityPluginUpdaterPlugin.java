@@ -270,6 +270,27 @@ public class VelocityPluginUpdaterPlugin {
         }
     }
 
+    @Subscribe
+    public void onCommandExecute(com.velocitypowered.api.event.command.CommandExecuteEvent event) {
+        String command = event.getCommand().toLowerCase().trim();
+
+        // Check for various forms of the GMEPG reload command
+        if (command.equals("geysermodelenginepackgenerator reload") ||
+            command.equals("gmepg reload") ||
+            command.startsWith("geysermodelenginepackgenerator reload ") ||
+            command.startsWith("gmepg reload ")) {
+
+            // Execute cleanup if pending before the extension reloads
+            if (cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled &&
+                cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate) {
+
+                Path pluginsDir = dataDir.getParent();
+                UpdaterService cleanupService = new UpdaterService(new VelocityLogger(), cfg);
+                cleanupService.executeCleanupIfPending(Platform.VELOCITY, pluginsDir);
+            }
+        }
+    }
+
     private void msg(CommandSource sender, String msg) {
         if (sender != null) send(sender, cfg.messages.prefix + msg);
         else logger.info(msg);
