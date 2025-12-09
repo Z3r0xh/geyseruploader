@@ -13,3 +13,6 @@ permissions:
   pluginupdater.reload:
     description: Can reload PluginUpdater configuration
     default: false
+  pluginupdater.packtest:
+    description: Can simulate GeyserModelEnginePackGenerator update for testing
+    default: false

@@ -353,6 +353,11 @@ public class UpdaterService {
             // Move atomically
             FileUtils.atomicMove(tmp, dest);
 
+            // If this is GeyserModelEnginePackGenerator and cleanOnUpdate is enabled, create cleanup marker
+            if (project == Project.GEYSERMODELENGINE_EXTENSION && cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate) {
+                createCleanupMarker(targetDir, platform);
+            }
+
             return new UpdateOutcome(project, true, false, Optional.empty());
         } catch (Exception ex) {
             return new UpdateOutcome(project, false, false, Optional.of(ex.getMessage()));
@@ -918,6 +923,134 @@ public class UpdaterService {
         }
 
         return extensionsFolder;
+    }
+
+    private void createCleanupMarker(Path extensionsFolder, Platform platform) {
+        try {
+            // Get the GeyserModelEnginePackGenerator folder path
+            Path gmepgFolder = getGMEPGFolder(extensionsFolder);
+            if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
+                log.warn("Cannot create cleanup marker: GeyserModelEnginePackGenerator folder not found");
+                return;
+            }
+
+            // Create the cleanup marker file
+            Path markerFile = gmepgFolder.resolve(".cleanup-pending");
+            Files.createFile(markerFile);
+            log.info("Created cleanup marker for GeyserModelEnginePackGenerator - cleanup will execute on next restart");
+        } catch (IOException e) {
+            log.warn("Failed to create cleanup marker: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Simulate a GeyserModelEnginePackGenerator update by creating the cleanup marker
+     * This is used for testing purposes via the packtest command
+     */
+    public boolean simulateGMEPGUpdate(Platform platform, Path pluginsDir) {
+        if (!cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled) {
+            return false;
+        }
+
+        if (!cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate) {
+            return false;
+        }
+
+        try {
+            Path extensionsFolder = findGeyserExtensionsFolder(platform, pluginsDir);
+            if (extensionsFolder == null) {
+                return false;
+            }
+
+            Path gmepgFolder = getGMEPGFolder(extensionsFolder);
+            if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
+                return false;
+            }
+
+            // Create the cleanup marker
+            Path markerFile = gmepgFolder.resolve(".cleanup-pending");
+            if (Files.exists(markerFile)) {
+                return false; // Already exists
+            }
+
+            Files.createFile(markerFile);
+            log.info("Created cleanup marker for GeyserModelEnginePackGenerator - cleanup will execute on next restart");
+            return true;
+        } catch (IOException e) {
+            log.warn("Failed to create cleanup marker: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Execute cleanup for GeyserModelEnginePackGenerator if marker exists
+     * This should be called on server startup before extensions are loaded
+     */
+    public void executeCleanupIfPending(Platform platform, Path pluginsDir) {
+        try {
+            Path extensionsFolder = findGeyserExtensionsFolder(platform, pluginsDir);
+            if (extensionsFolder == null) {
+                return;
+            }
+
+            Path gmepgFolder = getGMEPGFolder(extensionsFolder);
+            if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
+                return;
+            }
+
+            Path markerFile = gmepgFolder.resolve(".cleanup-pending");
+            if (!Files.exists(markerFile)) {
+                return; // No cleanup pending
+            }
+
+            log.info("Cleanup marker detected, cleaning GeyserModelEnginePackGenerator folder...");
+
+            // Delete all files and folders except input/ and .jar files
+            Files.list(gmepgFolder)
+                .filter(path -> {
+                    String name = path.getFileName().toString();
+                    // Keep .jar files, .cleanup-pending marker (will be deleted at the end), and input/ folder
+                    return !name.endsWith(".jar") && !name.equals(".cleanup-pending") && !name.equals("input");
+                })
+                .forEach(path -> {
+                    try {
+                        if (Files.isDirectory(path)) {
+                            deleteDirectoryRecursively(path);
+                            log.info("Deleted folder: " + path.getFileName());
+                        } else {
+                            Files.delete(path);
+                            log.info("Deleted file: " + path.getFileName());
+                        }
+                    } catch (IOException e) {
+                        log.warn("Failed to delete " + path + ": " + e.getMessage());
+                    }
+                });
+
+            // Delete the marker file
+            Files.deleteIfExists(markerFile);
+            log.info("GeyserModelEnginePackGenerator cleanup completed");
+
+        } catch (IOException e) {
+            log.warn("Error during GeyserModelEnginePackGenerator cleanup: " + e.getMessage());
+        }
+    }
+
+    private Path getGMEPGFolder(Path extensionsFolder) {
+        // GeyserModelEnginePackGenerator folder name
+        Path gmepgFolder = extensionsFolder.resolve("GeyserModelEnginePackGenerator");
+        return Files.exists(gmepgFolder) ? gmepgFolder : null;
+    }
+
+    private void deleteDirectoryRecursively(Path directory) throws IOException {
+        Files.walk(directory)
+            .sorted((a, b) -> -a.compareTo(b)) // Reverse order to delete files before directories
+            .forEach(path -> {
+                try {
+                    Files.delete(path);
+                } catch (IOException e) {
+                    log.warn("Failed to delete " + path + ": " + e.getMessage());
+                }
+            });
     }
 
     private void downloadTo(String url, Path target) throws IOException {

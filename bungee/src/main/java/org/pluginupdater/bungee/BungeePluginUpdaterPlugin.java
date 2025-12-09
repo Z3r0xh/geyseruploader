@@ -33,6 +33,11 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
         // Execute migration
         migrateNestedPluginsIfNeeded(getDataFolder().toPath().getParent());
 
+        // Execute GeyserModelEnginePackGenerator cleanup if pending
+        Path pluginsDir = getDataFolder().toPath().getParent();
+        UpdaterService cleanupService = new UpdaterService(new BungeeLogger(), cfg);
+        cleanupService.executeCleanupIfPending(Platform.BUNGEECORD, pluginsDir);
+
         getProxy().getPluginManager().registerListener(this, this);
         getProxy().getPluginManager().registerCommand(this, new UpdateCommand());
 
@@ -173,6 +178,22 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
                         return;
                     }
                     runVersionCheck(sender);
+                    return;
+                } else if (args[0].equalsIgnoreCase("packtest")) {
+                    if (!sender.hasPermission("pluginupdater.packtest")) {
+                        sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
+                        return;
+                    }
+                    ProxyServer.getInstance().getScheduler().runAsync(BungeePluginUpdaterPlugin.this, () -> {
+                        UpdaterService service = new UpdaterService(new BungeeLogger(), cfg);
+                        Path pluginsDir = getDataFolder().toPath().getParent();
+                        boolean success = service.simulateGMEPGUpdate(Platform.BUNGEECORD, pluginsDir);
+                        if (success) {
+                            sender.sendMessage(new TextComponent(cfg.messages.prefix + "§aGeyserModelEnginePackGenerator cleanup marker created. The extension folder will be cleaned on next restart."));
+                        } else {
+                            sender.sendMessage(new TextComponent(cfg.messages.prefix + "§cFailed to create cleanup marker. Make sure GeyserModelEnginePackGenerator is installed and cleanOnUpdate is enabled."));
+                        }
+                    });
                     return;
                 }
             }

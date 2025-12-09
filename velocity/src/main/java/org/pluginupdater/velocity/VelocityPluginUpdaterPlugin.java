@@ -58,6 +58,11 @@ public class VelocityPluginUpdaterPlugin {
         // Execute migration
         migrateNestedPluginsIfNeeded(dataDir.getParent());
 
+        // Execute GeyserModelEnginePackGenerator cleanup if pending
+        Path pluginsDir = dataDir.getParent();
+        UpdaterService cleanupService = new UpdaterService(new VelocityLogger(), cfg);
+        cleanupService.executeCleanupIfPending(Platform.VELOCITY, pluginsDir);
+
         // Register command
         proxy.getCommandManager().register(
                 proxy.getCommandManager().metaBuilder("pluginupdate-velocity").build(),
@@ -207,6 +212,22 @@ public class VelocityPluginUpdaterPlugin {
                     }
                     runVersionCheck(src);
                     return;
+                } else if (args[0].equalsIgnoreCase("packtest")) {
+                    if (!src.hasPermission("pluginupdater.packtest")) {
+                        send(src, cfg.messages.prefix + cfg.messages.noPermission);
+                        return;
+                    }
+                    proxy.getScheduler().buildTask(VelocityPluginUpdaterPlugin.this, () -> {
+                        UpdaterService service = new UpdaterService(new VelocityLogger(), cfg);
+                        Path pluginsDir = dataDir.getParent();
+                        boolean success = service.simulateGMEPGUpdate(Platform.VELOCITY, pluginsDir);
+                        if (success) {
+                            send(src, cfg.messages.prefix + "§aGeyserModelEnginePackGenerator cleanup marker created. The extension folder will be cleaned on next restart.");
+                        } else {
+                            send(src, cfg.messages.prefix + "§cFailed to create cleanup marker. Make sure GeyserModelEnginePackGenerator is installed and cleanOnUpdate is enabled.");
+                        }
+                    }).schedule();
+                    return;
                 }
             }
 
@@ -226,6 +247,7 @@ public class VelocityPluginUpdaterPlugin {
 
                 if ("check".startsWith(input)) completions.add("check");
                 if ("reload".startsWith(input)) completions.add("reload");
+                if ("packtest".startsWith(input)) completions.add("packtest");
 
                 return completions;
             }

@@ -19,7 +19,9 @@ targets:
     useDevBuilds: false  # false = stable releases from GitHub, true = dev builds from Jenkins
   geyserExtensions:
     geyserUtils: false  # Downloads extension + plugin for all platforms
-    geyserModelEngine: false  # Downloads extension only (no plugin for BungeeCord)
+    geyserModelEnginePackGenerator:
+      enabled: false  # Downloads GeyserModelEnginePackGenerator extension (all platforms)
+      cleanOnUpdate: true  # Clean extension folder on update (preserves input/ folder)
 postUpdate:
   notifyConsole: true
   notifyPlayersWithPermission: true

@@ -2,6 +2,7 @@ name: PluginUpdater
 main: org.pluginupdater.spigot.SpigotPluginUpdaterPlugin
 version: 1.0.0
 api-version: 1.19
+load: STARTUP
 description: Auto-updater for Geyser, Floodgate and other plugins
 authors: [neha, Z3r0xh]
 commands:
@@ -15,4 +16,7 @@ permissions:
     default: op
   pluginupdater.reload:
     description: Can reload PluginUpdater configuration
+    default: op
+  pluginupdater.packtest:
+    description: Can simulate GeyserModelEnginePackGenerator update for testing
     default: op

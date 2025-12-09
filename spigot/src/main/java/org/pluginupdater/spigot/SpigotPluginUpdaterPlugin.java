@@ -33,6 +33,11 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
         // Execute migration
         migrateNestedPluginsIfNeeded(getDataFolder().toPath().getParent());
 
+        // Execute GeyserModelEnginePackGenerator cleanup if pending
+        Path pluginsDir = getDataFolder().toPath().getParent();
+        UpdaterService cleanupService = new UpdaterService(new SpigotLogger(), cfg);
+        cleanupService.executeCleanupIfPending(Platform.SPIGOT, pluginsDir);
+
         getServer().getPluginManager().registerEvents(this, this);
 
         if (!cfg.enabled) {
@@ -213,6 +218,22 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                 }
                 runVersionCheck(sender);
                 return true;
+            } else if (args[0].equalsIgnoreCase("packtest")) {
+                if (!sender.hasPermission("pluginupdater.packtest")) {
+                    sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
+                    return true;
+                }
+                Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                    UpdaterService service = new UpdaterService(new SpigotLogger(), cfg);
+                    Path pluginsDir = getDataFolder().toPath().getParent();
+                    boolean success = service.simulateGMEPGUpdate(Platform.SPIGOT, pluginsDir);
+                    if (success) {
+                        sender.sendMessage(cfg.messages.prefix + "§aGeyserModelEnginePackGenerator cleanup marker created. The extension folder will be cleaned on next restart.");
+                    } else {
+                        sender.sendMessage(cfg.messages.prefix + "§cFailed to create cleanup marker. Make sure GeyserModelEnginePackGenerator is installed and cleanOnUpdate is enabled.");
+                    }
+                });
+                return true;
             }
         }
 
@@ -231,6 +252,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
 
             if ("check".startsWith(input)) completions.add("check");
             if ("reload".startsWith(input)) completions.add("reload");
+            if ("packtest".startsWith(input)) completions.add("packtest");
 
             return completions;
         }
