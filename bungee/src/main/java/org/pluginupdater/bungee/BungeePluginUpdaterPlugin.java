@@ -142,7 +142,9 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
     }
 
     private class UpdateCommand extends Command {
-        public UpdateCommand() { super("pluginupdate-bungee", "pluginupdater.admin", new String[0]); }
+        public UpdateCommand() {
+            super("pluginupdate-bungee", "pluginupdater.admin", new String[0]);
+        }
 
         @Override
         public void execute(CommandSender sender, String[] args) {

@@ -207,6 +207,26 @@ public class VelocityPluginUpdaterPlugin {
         }
 
         @Override
+        public List<String> suggest(Invocation invocation) {
+            if (!invocation.source().hasPermission("pluginupdater.admin")) {
+                return List.of();
+            }
+
+            String[] args = invocation.arguments();
+            if (args.length == 0 || args.length == 1) {
+                String input = args.length == 0 ? "" : args[0].toLowerCase();
+                List<String> completions = new java.util.ArrayList<>();
+
+                if ("check".startsWith(input)) completions.add("check");
+                if ("reload".startsWith(input)) completions.add("reload");
+
+                return completions;
+            }
+
+            return List.of();
+        }
+
+        @Override
         public boolean hasPermission(Invocation invocation) {
             return invocation.source().hasPermission("pluginupdater.admin");
         }

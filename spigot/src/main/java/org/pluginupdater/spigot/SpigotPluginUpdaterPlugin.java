@@ -15,6 +15,7 @@ import org.pluginupdater.core.UpdaterService;
 import org.pluginupdater.core.logging.LogAdapter;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -213,8 +214,26 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
         runAsyncCheck(true, sender);
         return true;
     }
-        
-            private void migrateNestedPluginsIfNeeded(Path correctPluginsDir) {
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (!command.getName().equalsIgnoreCase("pluginupdate-spigot")) return null;
+        if (!sender.hasPermission("pluginupdater.admin")) return null;
+
+        if (args.length == 1) {
+            List<String> completions = new ArrayList<>();
+            String input = args[0].toLowerCase();
+
+            if ("check".startsWith(input)) completions.add("check");
+            if ("reload".startsWith(input)) completions.add("reload");
+
+            return completions;
+        }
+
+        return null;
+    }
+
+    private void migrateNestedPluginsIfNeeded(Path correctPluginsDir) {
                 Path nested = correctPluginsDir.resolve("plugins");
                 if (!java.nio.file.Files.isDirectory(nested)) return;
                 try (java.util.stream.Stream<java.nio.file.Path> s = java.nio.file.Files.list(nested)) {
