@@ -291,7 +291,14 @@ public class UpdaterService {
             }
 
             // Determine destination
-            Path dest = (existing != null) ? existing : defaultDestination(project, platform, targetDir);
+            Path dest;
+            if (existing != null) {
+                dest = existing;
+            } else {
+                // Extract filename from download URL to preserve version information
+                String filename = extractFilenameFromUrl(downloadUrl);
+                dest = targetDir.resolve(filename);
+            }
             // Move atomically
             FileUtils.atomicMove(tmp, dest);
 
@@ -805,6 +812,16 @@ public class UpdaterService {
         } catch (IOException e) {
             throw e;
         }
+    }
+
+    private String extractFilenameFromUrl(String url) {
+        // Extract filename from URL (everything after the last /)
+        int lastSlash = url.lastIndexOf('/');
+        if (lastSlash != -1 && lastSlash < url.length() - 1) {
+            return url.substring(lastSlash + 1);
+        }
+        // Fallback to default if URL parsing fails
+        return "plugin.jar";
     }
 
     private Path defaultDestination(Project project, Platform platform, Path pluginsDir) {
