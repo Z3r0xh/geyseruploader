@@ -955,27 +955,43 @@ public class UpdaterService {
      */
     public boolean simulateGMEPGUpdate(Platform platform, Path pluginsDir) {
         if (!cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled) {
+            log.warn("GeyserModelEnginePackGenerator is not enabled in config");
             return false;
         }
 
         if (!cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate) {
+            log.warn("cleanOnUpdate is not enabled for GeyserModelEnginePackGenerator");
             return false;
         }
 
         try {
             Path extensionsFolder = findGeyserExtensionsFolder(platform, pluginsDir);
             if (extensionsFolder == null) {
+                log.warn("Could not find Geyser extensions folder");
                 return false;
             }
 
+            log.info("Found extensions folder: " + extensionsFolder);
+
             Path gmepgFolder = getGMEPGFolder(extensionsFolder);
             if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
+                log.warn("Could not find GeyserModelEnginePackGenerator folder in extensions folder");
+                // List available folders for debugging
+                try {
+                    log.info("Available folders in extensions:");
+                    Files.list(extensionsFolder)
+                        .filter(Files::isDirectory)
+                        .forEach(dir -> log.info("  - " + dir.getFileName()));
+                } catch (IOException ex) {
+                    log.warn("Could not list extensions folder contents");
+                }
                 return false;
             }
 
             // Create the cleanup marker
             Path markerFile = gmepgFolder.resolve(".cleanup-pending");
             if (Files.exists(markerFile)) {
+                log.warn("Cleanup marker already exists");
                 return false; // Already exists
             }
 
@@ -1042,9 +1058,33 @@ public class UpdaterService {
     }
 
     private Path getGMEPGFolder(Path extensionsFolder) {
-        // GeyserModelEnginePackGenerator folder name
-        Path gmepgFolder = extensionsFolder.resolve("GeyserModelEnginePackGenerator");
-        return Files.exists(gmepgFolder) ? gmepgFolder : null;
+        // Try different possible folder names
+        String[] possibleNames = {
+            "GeyserModelEnginePackGenerator",
+            "geysermodelenginepackgenerator",
+            "Geyser-ModelEnginePackGenerator"
+        };
+
+        for (String name : possibleNames) {
+            Path folder = extensionsFolder.resolve(name);
+            if (Files.exists(folder)) {
+                return folder;
+            }
+        }
+
+        // If not found by name, search for any folder containing "modelengine" and "pack"
+        try {
+            return Files.list(extensionsFolder)
+                .filter(Files::isDirectory)
+                .filter(p -> {
+                    String name = p.getFileName().toString().toLowerCase();
+                    return name.contains("modelengine") && name.contains("pack");
+                })
+                .findFirst()
+                .orElse(null);
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     private void deleteDirectoryRecursively(Path directory) throws IOException {
