@@ -87,6 +87,7 @@ public class ConfigManager {
             cfg.targets.luckperms = asBool(targets, "luckperms", cfg.targets.luckperms);
             cfg.targets.fawe = asBool(targets, "fawe", cfg.targets.fawe);
             cfg.targets.placeholderapi = asBool(targets, "placeholderapi", cfg.targets.placeholderapi);
+            cfg.targets.itemnbtapi = asBool(targets, "itemnbtapi", cfg.targets.itemnbtapi);
 
             // packetevents nested config
             Map<String, Object> packetevents = asMap(targets, "packetevents");

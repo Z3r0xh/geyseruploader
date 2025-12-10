@@ -23,6 +23,7 @@ targets:
   luckperms: false
   fawe: false  # FastAsyncWorldEdit (Spigot only)
   placeholderapi: false  # PlaceholderAPI (Spigot only)
+  itemnbtapi: false  # Item-NBT-API (Spigot only)
   packetevents:
     enabled: false
     useDevBuilds: false  # false = stable releases from GitHub, true = dev builds from Jenkins

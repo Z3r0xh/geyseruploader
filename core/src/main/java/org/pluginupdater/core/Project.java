@@ -12,6 +12,7 @@ public enum Project {
     VIAREWIND_LEGACY("viarewind-legacy", "ViaRewind-Legacy-Support"),
     FAWE("fawe", "FastAsyncWorldEdit"),
     PLACEHOLDERAPI("placeholderapi", "PlaceholderAPI"),
+    ITEMNBTAPI("itemnbtapi", "item-nbt-api"),
     // Geyser Extensions (go in Geyser-{Platform}/extensions/)
     GEYSERUTILS_EXTENSION("geyserutils-extension", "geyserutils-geyser"),
     GEYSERMODELENGINE_EXTENSION("geysermodelengine-extension", "GeyserModelEnginePackGenerator"),
@@ -53,5 +54,9 @@ public enum Project {
 
     public boolean isGeyserRelatedPlugin() {
         return this == GEYSERUTILS_PLUGIN || this == GEYSERMODELENGINE_PLUGIN;
+    }
+
+    public boolean isItemNBTAPI() {
+        return this == ITEMNBTAPI;
     }
 }

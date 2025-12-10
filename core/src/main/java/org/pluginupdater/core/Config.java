@@ -34,6 +34,7 @@ public class Config {
         public boolean luckperms = false;  // Default false, opt-in
         public boolean fawe = false;  // Default false, opt-in (Spigot only)
         public boolean placeholderapi = false;  // Default false, opt-in (Spigot only)
+        public boolean itemnbtapi = false;  // Default false, opt-in (Spigot only)
         public PacketEventsConfig packetevents = new PacketEventsConfig();
         public ProtocolLibConfig protocollib = new ProtocolLibConfig();
         public ViaPluginsConfig viaPlugins = new ViaPluginsConfig();

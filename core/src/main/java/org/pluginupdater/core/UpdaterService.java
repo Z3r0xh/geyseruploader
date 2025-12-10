@@ -30,6 +30,7 @@ public class UpdaterService {
     private static final String GEYSERMODELENGINE_PLUGIN_GITHUB_API = "https://api.github.com/repos/xSquishyLiam/mc-GeyserModelEngine-plugin/releases/latest";
     private static final String FAWE_JENKINS = "https://ci.athion.net/job/FastAsyncWorldEdit";
     private static final String PLACEHOLDERAPI_GITHUB_API = "https://api.github.com/repos/PlaceholderAPI/PlaceholderAPI";
+    private static final String ITEMNBTAPI_GITHUB_API = "https://api.github.com/repos/tr7zw/Item-NBT-API";
     private final HttpClient http;
     private final LogAdapter log;
     private final Config cfg;
@@ -134,6 +135,7 @@ public class UpdaterService {
         if (project == Project.LUCKPERMS) return cfg.targets.luckperms;
         if (project == Project.FAWE) return cfg.targets.fawe;
         if (project == Project.PLACEHOLDERAPI) return cfg.targets.placeholderapi;
+        if (project == Project.ITEMNBTAPI) return cfg.targets.itemnbtapi;
         if (project == Project.PACKETEVENTS) return cfg.targets.packetevents.enabled;
         if (project == Project.PROTOCOLLIB) return cfg.targets.protocollib.enabled;
         if (project == Project.VIAVERSION) return cfg.targets.viaPlugins.viaVersion;
@@ -253,6 +255,14 @@ public class UpdaterService {
             String url = getPlaceholderAPIUrl();
             int lastSlash = url.lastIndexOf('/');
             return url.substring(lastSlash + 1);
+        } else if (project == Project.ITEMNBTAPI) {
+            // ItemNBTAPI from GitHub releases
+            if (platform != Platform.SPIGOT) {
+                throw new IOException("ItemNBTAPI is only available for Spigot");
+            }
+            String url = getItemNBTAPIUrl();
+            int lastSlash = url.lastIndexOf('/');
+            return url.substring(lastSlash + 1);
         } else if (project.isGeyserExtension() || project.isGeyserRelatedPlugin()) {
             // Geyser extensions and related plugins from GitHub releases
             String url = getGeyserExtensionDownloadUrl(project, platform);
@@ -280,10 +290,11 @@ public class UpdaterService {
         if (cfg.targets.viaPlugins.viaBackwards) targets.add(Project.VIABACKWARDS);
         if (cfg.targets.viaPlugins.viaRewind) targets.add(Project.VIAREWIND);
         if (cfg.targets.viaPlugins.viaRewindLegacy) targets.add(Project.VIAREWIND_LEGACY);
-        // FAWE and PlaceholderAPI are Spigot only
+        // FAWE, PlaceholderAPI, and ItemNBTAPI are Spigot only
         if (platform == Platform.SPIGOT) {
             if (cfg.targets.fawe) targets.add(Project.FAWE);
             if (cfg.targets.placeholderapi) targets.add(Project.PLACEHOLDERAPI);
+            if (cfg.targets.itemnbtapi) targets.add(Project.ITEMNBTAPI);
         }
         // Geyser extensions
         if (cfg.targets.geyserExtensions.geyserUtils) {
@@ -396,6 +407,8 @@ public class UpdaterService {
             return getFAWEDownloadUrl(platform);
         } else if (project == Project.PLACEHOLDERAPI) {
             return getPlaceholderAPIUrl();
+        } else if (project == Project.ITEMNBTAPI) {
+            return getItemNBTAPIUrl();
         } else {
             // GeyserMC API (Geyser & Floodgate)
             return GEYSER_BASE + "/" + project.apiName() + "/versions/latest/builds/latest/downloads/" + platform.apiName();
@@ -909,6 +922,50 @@ public class UpdaterService {
             }
         }
         throw new IOException("Could not find latest PlaceholderAPI tag");
+    }
+
+    private String getItemNBTAPIUrl() throws IOException {
+        // Fetch GitHub API to get releases with assets
+        String apiUrl = ITEMNBTAPI_GITHUB_API + "/releases";
+        HttpRequest req = createRequestBuilder(apiUrl)
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String body = resp.body();
+                // Find first release with "item-nbt-api-plugin-*.jar" asset
+                return extractItemNBTAPIAsset(body);
+            } else {
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching ItemNBTAPI releases");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    private String extractItemNBTAPIAsset(String json) throws IOException {
+        // Parse releases array to find first one with assets containing "item-nbt-api-plugin-*.jar"
+        String searchPattern = "\"browser_download_url\":\"";
+        int startPos = 0;
+
+        while ((startPos = json.indexOf(searchPattern, startPos)) != -1) {
+            int urlStart = startPos + searchPattern.length();
+            int urlEnd = json.indexOf("\"", urlStart);
+            if (urlEnd == -1) break;
+
+            String url = json.substring(urlStart, urlEnd);
+            // Check if this is the plugin JAR we want
+            if (url.contains("item-nbt-api-plugin-") && url.endsWith(".jar")) {
+                return url;
+            }
+
+            startPos = urlEnd;
+        }
+
+        throw new IOException("Could not find ItemNBTAPI plugin JAR in releases");
     }
 
     private Path findGeyserExtensionsFolder(Platform platform, Path pluginsDir) throws IOException {
