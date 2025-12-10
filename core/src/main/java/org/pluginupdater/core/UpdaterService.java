@@ -15,6 +15,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class UpdaterService {
+    // ANSI Color codes for console output
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_YELLOW = "\u001B[33m";
+    private static final String ANSI_RED = "\u001B[31m";
+    private static final String ANSI_CYAN = "\u001B[36m";
+    private static final String ANSI_GRAY = "\u001B[90m";
+
     private static final String USER_AGENT = "PluginUpdater/1.0.0 (https://github.com/yourusername/pluginupdater)";
     private static final String GEYSER_BASE = "https://download.geysermc.org/v2/projects";
     private static final String LUCKPERMS_API = "https://metadata.luckperms.net/data/downloads";
@@ -346,7 +354,7 @@ public class UpdaterService {
                     newFilename = extractFilenameFromUrl(downloadUrl);
                 }
 
-                log.info("Comparing versions - Existing: " + existingFilename + ", Latest: " + newFilename);
+                log.info(ANSI_CYAN + "Comparing versions - Existing: " + existingFilename + ", Latest: " + newFilename + ANSI_RESET);
 
                 // If filenames match, compare file sizes to detect updates
                 if (existingFilename.equals(newFilename)) {
@@ -355,10 +363,10 @@ public class UpdaterService {
 
                     if (existingSize == newSize) {
                         Files.deleteIfExists(tmp);
-                        log.info(project.apiName() + " is already up to date (filename and size match)");
+                        log.info(ANSI_GREEN + project.apiName() + " is already up to date (filename and size match)" + ANSI_RESET);
                         return new UpdateOutcome(project, false, true, Optional.empty());
                     } else {
-                        log.info(project.apiName() + " has an update (same filename but different size: " + existingSize + " -> " + newSize + " bytes)");
+                        log.info(ANSI_YELLOW + project.apiName() + " has an update (same filename but different size: " + existingSize + " -> " + newSize + " bytes)" + ANSI_RESET);
                         // Continue with update
                     }
                 } else {
@@ -367,15 +375,15 @@ public class UpdaterService {
                     if (versionComparison > 0) {
                         // Existing version is NEWER than the "latest" - prevent downgrade
                         Files.deleteIfExists(tmp);
-                        log.warn(project.apiName() + " - Existing version (" + existingFilename + ") is newer than available version (" + newFilename + "). Skipping downgrade.");
+                        log.warn(ANSI_RED + project.apiName() + " - Existing version (" + existingFilename + ") is newer than available version (" + newFilename + "). Skipping downgrade." + ANSI_RESET);
                         return new UpdateOutcome(project, false, true, Optional.empty());
                     } else if (versionComparison < 0) {
                         // New version is NEWER - proceed with update
-                        log.info(project.apiName() + " has a new version available: " + newFilename);
+                        log.info(ANSI_YELLOW + project.apiName() + " has a new version available: " + newFilename + ANSI_RESET);
                     } else {
                         // Versions are equal (but filenames differ slightly) - skip update
                         Files.deleteIfExists(tmp);
-                        log.info(project.apiName() + " versions are equivalent, skipping update");
+                        log.info(ANSI_GREEN + project.apiName() + " versions are equivalent, skipping update" + ANSI_RESET);
                         return new UpdateOutcome(project, false, true, Optional.empty());
                     }
                 }
@@ -1048,17 +1056,17 @@ public class UpdaterService {
         try {
             Path gmepgFolder = getGMEPGFolder(extensionsFolder);
             if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
-                log.warn("Cannot create cleanup marker: GeyserModelEngineExtension folder not found");
+                log.warn(ANSI_RED + "Cannot create cleanup marker: GeyserModelEngineExtension folder not found" + ANSI_RESET);
                 return;
             }
 
             Path markerFile = gmepgFolder.resolve(".cleanup-pending");
             if (!Files.exists(markerFile)) {
                 Files.createFile(markerFile);
-                log.info("Created cleanup marker - will clean on server shutdown");
+                log.info(ANSI_GREEN + "Created cleanup marker - will clean on server shutdown" + ANSI_RESET);
             }
         } catch (IOException e) {
-            log.warn("Failed to create cleanup marker: " + e.getMessage());
+            log.warn(ANSI_RED + "Failed to create cleanup marker: " + e.getMessage() + ANSI_RESET);
         }
     }
 
@@ -1083,7 +1091,7 @@ public class UpdaterService {
                 return; // No cleanup pending
             }
 
-            log.info("Cleanup marker detected, cleaning GeyserModelEngineExtension folder on shutdown...");
+            log.info(ANSI_YELLOW + "Cleanup marker detected, cleaning GeyserModelEngineExtension folder on shutdown..." + ANSI_RESET);
 
             // Delete all files and folders except input/ and .jar files
             Files.list(gmepgFolder)
@@ -1096,22 +1104,22 @@ public class UpdaterService {
                     try {
                         if (Files.isDirectory(path)) {
                             deleteDirectoryRecursively(path);
-                            log.info("Deleted folder: " + path.getFileName());
+                            log.info(ANSI_GRAY + "Deleted folder: " + path.getFileName() + ANSI_RESET);
                         } else {
                             Files.delete(path);
-                            log.info("Deleted file: " + path.getFileName());
+                            log.info(ANSI_GRAY + "Deleted file: " + path.getFileName() + ANSI_RESET);
                         }
                     } catch (IOException e) {
-                        log.warn("Failed to delete " + path + ": " + e.getMessage());
+                        log.warn(ANSI_RED + "Failed to delete " + path + ": " + e.getMessage() + ANSI_RESET);
                     }
                 });
 
             // Delete the marker file
             Files.deleteIfExists(markerFile);
-            log.info("GeyserModelEngineExtension cleanup completed");
+            log.info(ANSI_GREEN + "GeyserModelEngineExtension cleanup completed" + ANSI_RESET);
 
         } catch (IOException e) {
-            log.warn("Error during GeyserModelEngineExtension cleanup: " + e.getMessage());
+            log.warn(ANSI_RED + "Error during GeyserModelEngineExtension cleanup: " + e.getMessage() + ANSI_RESET);
         }
     }
 
@@ -1121,45 +1129,45 @@ public class UpdaterService {
      */
     public boolean simulateGMEPGUpdate(Platform platform, Path pluginsDir) {
         if (!cfg.targets.geyserExtensions.geyserModelEngineExtension.enabled) {
-            log.warn("GeyserModelEngineExtension is not enabled in config");
+            log.warn(ANSI_RED + "GeyserModelEngineExtension is not enabled in config" + ANSI_RESET);
             return false;
         }
 
         if (!cfg.targets.geyserExtensions.geyserModelEngineExtension.cleanOnUpdate) {
-            log.warn("cleanOnUpdate is not enabled for GeyserModelEngineExtension");
+            log.warn(ANSI_RED + "cleanOnUpdate is not enabled for GeyserModelEngineExtension" + ANSI_RESET);
             return false;
         }
 
         try {
             Path extensionsFolder = findGeyserExtensionsFolder(platform, pluginsDir);
             if (extensionsFolder == null) {
-                log.warn("Could not find Geyser extensions folder");
+                log.warn(ANSI_RED + "Could not find Geyser extensions folder" + ANSI_RESET);
                 return false;
             }
 
-            log.info("Found extensions folder: " + extensionsFolder);
+            log.info(ANSI_CYAN + "Found extensions folder: " + extensionsFolder + ANSI_RESET);
 
             Path gmepgFolder = getGMEPGFolder(extensionsFolder);
             if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
-                log.warn("Could not find GeyserModelEngineExtension folder in extensions folder");
+                log.warn(ANSI_RED + "Could not find GeyserModelEngineExtension folder in extensions folder" + ANSI_RESET);
                 // List available folders for debugging
                 try {
-                    log.info("Available folders in extensions:");
+                    log.info(ANSI_CYAN + "Available folders in extensions:" + ANSI_RESET);
                     Files.list(extensionsFolder)
                         .filter(Files::isDirectory)
-                        .forEach(dir -> log.info("  - " + dir.getFileName()));
+                        .forEach(dir -> log.info(ANSI_GRAY + "  - " + dir.getFileName() + ANSI_RESET));
                 } catch (IOException ex) {
-                    log.warn("Could not list extensions folder contents");
+                    log.warn(ANSI_RED + "Could not list extensions folder contents" + ANSI_RESET);
                 }
                 return false;
             }
 
             // Create cleanup marker - cleanup will happen on shutdown
             createCleanupMarker(extensionsFolder);
-            log.info("Created cleanup marker - cleanup will execute on server shutdown");
+            log.info(ANSI_GREEN + "Created cleanup marker - cleanup will execute on server shutdown" + ANSI_RESET);
             return true;
         } catch (Exception e) {
-            log.warn("Failed to create cleanup marker: " + e.getMessage());
+            log.warn(ANSI_RED + "Failed to create cleanup marker: " + e.getMessage() + ANSI_RESET);
             return false;
         }
     }
@@ -1204,7 +1212,7 @@ public class UpdaterService {
                 try {
                     Files.delete(path);
                 } catch (IOException e) {
-                    log.warn("Failed to delete " + path + ": " + e.getMessage());
+                    log.warn(ANSI_RED + "Failed to delete " + path + ": " + e.getMessage() + ANSI_RESET);
                 }
             });
     }
@@ -1237,7 +1245,7 @@ public class UpdaterService {
             return 0; // Versions are equal
         } catch (Exception e) {
             // If version extraction fails, treat as equal (fallback to filename comparison)
-            log.warn("Failed to compare versions for: " + filename1 + " vs " + filename2 + " - " + e.getMessage());
+            log.warn(ANSI_YELLOW + "Failed to compare versions for: " + filename1 + " vs " + filename2 + " - " + e.getMessage() + ANSI_RESET);
             return 0;
         }
     }
