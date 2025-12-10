@@ -3,6 +3,7 @@ main: org.pluginupdater.bungee.BungeePluginUpdaterPlugin
 version: 1.0.0
 description: Auto-updater for Geyser, Floodgate and other plugins
 authors: [neha, Z3r0xh]
+loadBefore: [Geyser-BungeeCord, floodgate]
 commands:
   pluginupdate-bungee:
     description: Execute plugin update check or reload config

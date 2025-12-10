@@ -25,7 +25,11 @@ import java.util.logging.Logger;
         id = "pluginupdater",
         name = "PluginUpdater",
         version = "1.0.0",
-        description = "Auto-updater for Geyser, Floodgate and other plugins"
+        description = "Auto-updater for Geyser, Floodgate and other plugins",
+        dependencies = {
+            @com.velocitypowered.api.plugin.Dependency(id = "geyser", optional = true),
+            @com.velocitypowered.api.plugin.Dependency(id = "floodgate", optional = true)
+        }
 )
 public class VelocityPluginUpdaterPlugin {
     private final ProxyServer proxy;
