@@ -19,7 +19,7 @@ Auto-update plugin for Minecraft servers. Supports Spigot (Paper, etc.), BungeeC
 
 ### Geyser Extensions
 - **GeyserUtils Extension** - Utility extension for Geyser
-- **GeyserModelEnginePackGenerator Extension** - Model engine resource pack generator
+- **GeyserModelEngineExtension Extension** - Model engine resource pack generator
 
 ### Geyser-Related Plugins
 - **GeyserUtils Plugin** - Geyser utilities
@@ -37,7 +37,7 @@ Auto-update plugin for Minecraft servers. Supports Spigot (Paper, etc.), BungeeC
   - Reload config: `/pluginupdate-{platform} reload`
   - Test pack cleanup: `/pluginupdate-{platform} packtest`
 - Semantic version comparison to prevent downgrades
-- Special cleanup handling for GeyserModelEnginePackGenerator extension updates
+- Special cleanup handling for GeyserModelEngineExtension extension updates
 - Configurable messages, targets, intervals, and restart commands
 - GitHub token support for API rate limit mitigation
 - bStats metrics integration
@@ -109,8 +109,8 @@ targets:
   geysermodelengine_plugin: true
 ```
 
-### GeyserModelEnginePackGenerator Cleanup
-- `geysermodelenginepackgenerator.cleanOnUpdate` - Clean extension folder on update (keeps input/ folder)
+### GeyserModelEngineExtension Cleanup
+- `GeyserModelEngineExtension.cleanOnUpdate` - Clean extension folder on update (keeps input/ folder)
 
 ### Post-Update Actions
 - `postUpdate.runRestartCommand` - Automatically run restart command after update
@@ -140,7 +140,7 @@ All messages are customizable in the config file.
 2. Compares filenames using semantic version comparison
 3. If newer version available:
    - Downloads and replaces the existing JAR atomically
-   - For GeyserModelEnginePackGenerator: Creates cleanup marker
+   - For GeyserModelEngineExtension: Creates cleanup marker
 4. On next server restart:
    - Cleans GMEPG extension folder (if marker exists)
    - New plugins load automatically
@@ -164,7 +164,7 @@ All messages are customizable in the config file.
 - GitHub API has rate limits (60 requests/hour without token, 5000 with token)
 
 ## Original Project
-This is a fork of [GeyserUpdater](https://github.com/original-author/geyserupdater) (replace with actual URL if known), expanded to support multiple plugins beyond Geyser and Floodgate.
+This is a fork of [GeyserUpdater](https://github.com/grampr/geyseruploader) (replace with actual URL if known), expanded to support multiple plugins beyond Geyser and Floodgate.
 
 ## License
 MIT License (or specify as appropriate)

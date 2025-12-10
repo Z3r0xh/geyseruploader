@@ -161,10 +161,15 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
 
         @Override
         public void execute(CommandSender sender, String[] args) {
+            if (!sender.hasPermission("pluginupdater.command")) {
+                sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
+                return;
+            }
+
             // Check for subcommands
             if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("reload")) {
-                    if (!sender.hasPermission("pluginupdater.reload")) {
+                    if (!sender.hasPermission("pluginupdater.command.reload")) {
                         sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
                         return;
                     }
@@ -176,14 +181,14 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
                     }
                     return;
                 } else if (args[0].equalsIgnoreCase("check")) {
-                    if (!sender.hasPermission("pluginupdater.check")) {
+                    if (!sender.hasPermission("pluginupdater.command.check")) {
                         sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
                         return;
                     }
                     runVersionCheck(sender);
                     return;
                 } else if (args[0].equalsIgnoreCase("packtest")) {
-                    if (!sender.hasPermission("pluginupdater.packtest")) {
+                    if (!sender.hasPermission("pluginupdater.command.packtest")) {
                         sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
                         return;
                     }
@@ -201,12 +206,17 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
                 }
             }
 
+            // Default: run update (requires update permission)
+            if (!sender.hasPermission("pluginupdater.command.update")) {
+                sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
+                return;
+            }
             runAsyncCheck(true, sender);
         }
 
         @Override
         public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
-            if (!sender.hasPermission("pluginupdater.admin")) {
+            if (!sender.hasPermission("pluginupdater.command")) {
                 return new java.util.ArrayList<>();
             }
 

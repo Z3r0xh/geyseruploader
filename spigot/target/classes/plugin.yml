@@ -9,15 +9,33 @@ softdepend: [Geyser-Spigot, floodgate, ProtocolLib, ViaVersion, ViaBackwards, Vi
 commands:
   pluginupdate-spigot:
     description: Execute plugin update check or reload config
-    usage: /pluginupdate-spigot [reload]
-    permission: pluginupdater.admin
+    usage: /pluginupdate-spigot [reload|check|packtest]
+    permission: pluginupdater.command
 permissions:
-  pluginupdater.admin:
-    description: Can execute PluginUpdater admin commands
+  pluginupdater.*:
+    description: Grants all PluginUpdater permissions
     default: op
-  pluginupdater.reload:
+    children:
+      pluginupdater.command: true
+      pluginupdater.command.update: true
+      pluginupdater.command.check: true
+      pluginupdater.command.reload: true
+      pluginupdater.command.packtest: true
+  pluginupdater.command:
+    description: Access to PluginUpdater commands
+    default: op
+    children:
+      pluginupdater.command.update: true
+      pluginupdater.command.check: true
+  pluginupdater.command.update:
+    description: Can trigger manual plugin updates
+    default: op
+  pluginupdater.command.check:
+    description: Can check plugin versions without updating
+    default: op
+  pluginupdater.command.reload:
     description: Can reload PluginUpdater configuration
     default: op
-  pluginupdater.packtest:
+  pluginupdater.command.packtest:
     description: Can simulate GeyserModelEngineExtension update for testing
     default: op

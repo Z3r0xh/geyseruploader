@@ -188,7 +188,7 @@ public class VelocityPluginUpdaterPlugin {
         @Override
         public void execute(Invocation invocation) {
             CommandSource src = invocation.source();
-            if (!src.hasPermission("pluginupdater.admin")) {
+            if (!src.hasPermission("pluginupdater.command")) {
                 send(src, cfg.messages.prefix + cfg.messages.noPermission);
                 return;
             }
@@ -197,7 +197,7 @@ public class VelocityPluginUpdaterPlugin {
             String[] args = invocation.arguments();
             if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("reload")) {
-                    if (!src.hasPermission("pluginupdater.reload")) {
+                    if (!src.hasPermission("pluginupdater.command.reload")) {
                         send(src, cfg.messages.prefix + cfg.messages.noPermission);
                         return;
                     }
@@ -209,14 +209,14 @@ public class VelocityPluginUpdaterPlugin {
                     }
                     return;
                 } else if (args[0].equalsIgnoreCase("check")) {
-                    if (!src.hasPermission("pluginupdater.check")) {
+                    if (!src.hasPermission("pluginupdater.command.check")) {
                         send(src, cfg.messages.prefix + cfg.messages.noPermission);
                         return;
                     }
                     runVersionCheck(src);
                     return;
                 } else if (args[0].equalsIgnoreCase("packtest")) {
-                    if (!src.hasPermission("pluginupdater.packtest")) {
+                    if (!src.hasPermission("pluginupdater.command.packtest")) {
                         send(src, cfg.messages.prefix + cfg.messages.noPermission);
                         return;
                     }
@@ -234,12 +234,17 @@ public class VelocityPluginUpdaterPlugin {
                 }
             }
 
+            // Default: run update (requires update permission)
+            if (!src.hasPermission("pluginupdater.command.update")) {
+                send(src, cfg.messages.prefix + cfg.messages.noPermission);
+                return;
+            }
             runAsyncCheck(true, src);
         }
 
         @Override
         public List<String> suggest(Invocation invocation) {
-            if (!invocation.source().hasPermission("pluginupdater.admin")) {
+            if (!invocation.source().hasPermission("pluginupdater.command")) {
                 return List.of();
             }
 
@@ -260,7 +265,7 @@ public class VelocityPluginUpdaterPlugin {
 
         @Override
         public boolean hasPermission(Invocation invocation) {
-            return invocation.source().hasPermission("pluginupdater.admin");
+            return invocation.source().hasPermission("pluginupdater.command");
         }
     }
 

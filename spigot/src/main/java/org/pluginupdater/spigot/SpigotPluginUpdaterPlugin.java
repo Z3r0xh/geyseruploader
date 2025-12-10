@@ -195,7 +195,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!command.getName().equalsIgnoreCase("pluginupdate-spigot")) return false;
-        if (!sender.hasPermission("pluginupdater.admin")) {
+        if (!sender.hasPermission("pluginupdater.command")) {
             sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
             return true;
         }
@@ -203,7 +203,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
         // Check for subcommands
         if (args.length > 0) {
             if (args[0].equalsIgnoreCase("reload")) {
-                if (!sender.hasPermission("pluginupdater.reload")) {
+                if (!sender.hasPermission("pluginupdater.command.reload")) {
                     sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
                     return true;
                 }
@@ -215,14 +215,14 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                 }
                 return true;
             } else if (args[0].equalsIgnoreCase("check")) {
-                if (!sender.hasPermission("pluginupdater.check")) {
+                if (!sender.hasPermission("pluginupdater.command.check")) {
                     sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
                     return true;
                 }
                 runVersionCheck(sender);
                 return true;
             } else if (args[0].equalsIgnoreCase("packtest")) {
-                if (!sender.hasPermission("pluginupdater.packtest")) {
+                if (!sender.hasPermission("pluginupdater.command.packtest")) {
                     sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
                     return true;
                 }
@@ -240,6 +240,11 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
             }
         }
 
+        // Default: run update (requires update permission)
+        if (!sender.hasPermission("pluginupdater.command.update")) {
+            sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
+            return true;
+        }
         runAsyncCheck(true, sender);
         return true;
     }
@@ -247,7 +252,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (!command.getName().equalsIgnoreCase("pluginupdate-spigot")) return null;
-        if (!sender.hasPermission("pluginupdater.admin")) return null;
+        if (!sender.hasPermission("pluginupdater.command")) return null;
 
         if (args.length == 1) {
             List<String> completions = new ArrayList<>();

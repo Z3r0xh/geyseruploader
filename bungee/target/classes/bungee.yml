@@ -7,13 +7,23 @@ softDepends: [Geyser-BungeeCord, floodgate]
 commands:
   pluginupdate-bungee:
     description: Execute plugin update check or reload config
+    permission: pluginupdater.command
 permissions:
-  pluginupdater.admin:
-    description: Can execute PluginUpdater admin commands
+  pluginupdater.*:
+    description: Grants all PluginUpdater permissions
     default: false
-  pluginupdater.reload:
+  pluginupdater.command:
+    description: Access to PluginUpdater commands
+    default: false
+  pluginupdater.command.update:
+    description: Can trigger manual plugin updates
+    default: false
+  pluginupdater.command.check:
+    description: Can check plugin versions without updating
+    default: false
+  pluginupdater.command.reload:
     description: Can reload PluginUpdater configuration
     default: false
-  pluginupdater.packtest:
+  pluginupdater.command.packtest:
     description: Can simulate GeyserModelEngineExtension update for testing
     default: false
