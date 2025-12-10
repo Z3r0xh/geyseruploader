@@ -225,9 +225,9 @@ public class VelocityPluginUpdaterPlugin {
                         Path pluginsDir = dataDir.getParent();
                         boolean success = service.simulateGMEPGUpdate(Platform.VELOCITY, pluginsDir);
                         if (success) {
-                            send(src, cfg.messages.prefix + "§aGeyserModelEnginePackGenerator cleanup marker created. The extension folder will be cleaned on next restart.");
+                            send(src, cfg.messages.prefix + cfg.messages.geyserModelEngineCleanupSuccess);
                         } else {
-                            send(src, cfg.messages.prefix + "§cFailed to create cleanup marker. Make sure GeyserModelEnginePackGenerator is installed and cleanOnUpdate is enabled.");
+                            send(src, cfg.messages.prefix + cfg.messages.geyserModelEngineCleanupFailed);
                         }
                     }).schedule();
                     return;

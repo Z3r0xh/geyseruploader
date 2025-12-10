@@ -80,27 +80,29 @@ public class Config {
     public Messages messages = new Messages();
     public static class Messages {
         public String prefix = "§a[PluginUpdater]§r ";
-        public String checking = "Checking for updates...";
+        public String checking = "§7Checking for updates...";
         public String upToDate = "§a{project}§r is up to date.";
         public String updated = "§e{project}§r has been updated to the latest build.";
-        public String noTarget = "No target projects are enabled.";
+        public String noTarget = "§eNo target projects are enabled.";
         public String failed = "§cFailed to update {project}: {error}";
         public String promptRestart = "§eUpdate applied. Server restart required.";
-        public String startUpCheck = "Starting automatic update check on startup.";
-        public String periodicCheck = "Scheduled periodic update check (every {hours} hours).";
-        public String adminLoginCheck = "Admin login detected, executing update check.";
-        public String manualTriggered = "Starting manual update check.";
-        public String nothingToDo = "No valid targets. Please check config.yml.";
+        public String startUpCheck = "§7Starting automatic update check on startup.";
+        public String periodicCheck = "§7Scheduled periodic update check (every {hours} hours).";
+        public String adminLoginCheck = "§7Admin login detected, executing update check.";
+        public String manualTriggered = "§7Starting manual update check.";
+        public String nothingToDo = "§eNo valid targets. Please check config.yml.";
         public String done = "§aUpdate check completed.";
         public String noPermission = "§cYou do not have permission.";
-        public String pluginDisabled = "[PluginUpdater] disabled by config";
-        public String downloadFailed = "Download failed: {error}";
-        public String hashComparisonFailed = "Hash comparison failed. Continuing with overwrite update: {error}";
-        public String migrationFailed = "Failed to move {file}: {error}";
-        public String migrationScanFailed = "Migration scan failed: {error}";
-        public String dataDirectoryError = "Could not create data directory: {error}";
+        public String pluginDisabled = "§c[PluginUpdater] disabled by config";
+        public String downloadFailed = "§cDownload failed: {error}";
+        public String hashComparisonFailed = "§eHash comparison failed. Continuing with overwrite update: {error}";
+        public String migrationFailed = "§cFailed to move {file}: {error}";
+        public String migrationScanFailed = "§cMigration scan failed: {error}";
+        public String dataDirectoryError = "§cCould not create data directory: {error}";
         public String reloadSuccess = "§aConfiguration reloaded successfully.";
         public String reloadFailed = "§cFailed to reload configuration: {error}";
+        public String geyserModelEngineCleanupSuccess = "§aGeyserModelEngineExtension cleanup marker created. The extension folder will be cleaned on next restart.";
+        public String geyserModelEngineCleanupFailed = "§cFailed to create cleanup marker. Make sure GeyserModelEngineExtension is installed and cleanOnUpdate is enabled.";
 
         // Version check messages
         public String versionCheckHeader = "§e§l═══════════════════════════════════";

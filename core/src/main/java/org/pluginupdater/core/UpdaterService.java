@@ -402,7 +402,7 @@ public class UpdaterService {
             // Move atomically
             FileUtils.atomicMove(tmp, dest);
 
-            // If this is GeyserModelEnginePackGenerator and cleanOnUpdate is enabled, create cleanup marker
+            // If this is GeyserModelEngineExtension and cleanOnUpdate is enabled, create cleanup marker
             if (project == Project.GEYSERMODELENGINE_EXTENSION && cfg.targets.geyserExtensions.geyserModelEngineExtension.cleanOnUpdate) {
                 createCleanupMarker(targetDir);
             }
@@ -1041,14 +1041,14 @@ public class UpdaterService {
     }
 
     /**
-     * Create a cleanup marker for GeyserModelEnginePackGenerator
+     * Create a cleanup marker for GeyserModelEngineExtension
      * The cleanup will be executed on server shutdown
      */
     private void createCleanupMarker(Path extensionsFolder) {
         try {
             Path gmepgFolder = getGMEPGFolder(extensionsFolder);
             if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
-                log.warn("Cannot create cleanup marker: GeyserModelEnginePackGenerator folder not found");
+                log.warn("Cannot create cleanup marker: GeyserModelEngineExtension folder not found");
                 return;
             }
 
@@ -1083,7 +1083,7 @@ public class UpdaterService {
                 return; // No cleanup pending
             }
 
-            log.info("Cleanup marker detected, cleaning GeyserModelEnginePackGenerator folder on shutdown...");
+            log.info("Cleanup marker detected, cleaning GeyserModelEngineExtension folder on shutdown...");
 
             // Delete all files and folders except input/ and .jar files
             Files.list(gmepgFolder)
@@ -1108,25 +1108,25 @@ public class UpdaterService {
 
             // Delete the marker file
             Files.deleteIfExists(markerFile);
-            log.info("GeyserModelEnginePackGenerator cleanup completed");
+            log.info("GeyserModelEngineExtension cleanup completed");
 
         } catch (IOException e) {
-            log.warn("Error during GeyserModelEnginePackGenerator cleanup: " + e.getMessage());
+            log.warn("Error during GeyserModelEngineExtension cleanup: " + e.getMessage());
         }
     }
 
     /**
-     * Simulate a GeyserModelEnginePackGenerator update by creating cleanup marker
+     * Simulate a GeyserModelEngineExtension update by creating cleanup marker
      * This is used for testing purposes via the packtest command
      */
     public boolean simulateGMEPGUpdate(Platform platform, Path pluginsDir) {
         if (!cfg.targets.geyserExtensions.geyserModelEngineExtension.enabled) {
-            log.warn("GeyserModelEnginePackGenerator is not enabled in config");
+            log.warn("GeyserModelEngineExtension is not enabled in config");
             return false;
         }
 
         if (!cfg.targets.geyserExtensions.geyserModelEngineExtension.cleanOnUpdate) {
-            log.warn("cleanOnUpdate is not enabled for GeyserModelEnginePackGenerator");
+            log.warn("cleanOnUpdate is not enabled for GeyserModelEngineExtension");
             return false;
         }
 
@@ -1141,7 +1141,7 @@ public class UpdaterService {
 
             Path gmepgFolder = getGMEPGFolder(extensionsFolder);
             if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
-                log.warn("Could not find GeyserModelEnginePackGenerator folder in extensions folder");
+                log.warn("Could not find GeyserModelEngineExtension folder in extensions folder");
                 // List available folders for debugging
                 try {
                     log.info("Available folders in extensions:");

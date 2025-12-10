@@ -231,9 +231,9 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                     Path pluginsDir = getDataFolder().toPath().getParent();
                     boolean success = service.simulateGMEPGUpdate(Platform.SPIGOT, pluginsDir);
                     if (success) {
-                        sender.sendMessage(cfg.messages.prefix + "§aGeyserModelEnginePackGenerator cleanup marker created. The extension folder will be cleaned on next restart.");
+                        sender.sendMessage(cfg.messages.prefix + cfg.messages.geyserModelEngineCleanupSuccess);
                     } else {
-                        sender.sendMessage(cfg.messages.prefix + "§cFailed to create cleanup marker. Make sure GeyserModelEnginePackGenerator is installed and cleanOnUpdate is enabled.");
+                        sender.sendMessage(cfg.messages.prefix + cfg.messages.geyserModelEngineCleanupFailed);
                     }
                 });
                 return true;

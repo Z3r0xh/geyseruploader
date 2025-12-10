@@ -192,9 +192,9 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
                         Path pluginsDir = getDataFolder().toPath().getParent();
                         boolean success = service.simulateGMEPGUpdate(Platform.BUNGEECORD, pluginsDir);
                         if (success) {
-                            sender.sendMessage(new TextComponent(cfg.messages.prefix + "§aGeyserModelEnginePackGenerator cleanup marker created. The extension folder will be cleaned on next restart."));
+                            sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.geyserModelEngineCleanupSuccess));
                         } else {
-                            sender.sendMessage(new TextComponent(cfg.messages.prefix + "§cFailed to create cleanup marker. Make sure GeyserModelEnginePackGenerator is installed and cleanOnUpdate is enabled."));
+                            sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.geyserModelEngineCleanupFailed));
                         }
                     });
                     return;

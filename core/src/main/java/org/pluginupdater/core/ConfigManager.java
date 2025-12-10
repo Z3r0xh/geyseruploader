@@ -285,6 +285,8 @@ public class ConfigManager {
         cfg.messages.dataDirectoryError = asStr(map, "dataDirectoryError", cfg.messages.dataDirectoryError);
         cfg.messages.reloadSuccess = asStr(map, "reloadSuccess", cfg.messages.reloadSuccess);
         cfg.messages.reloadFailed = asStr(map, "reloadFailed", cfg.messages.reloadFailed);
+        cfg.messages.geyserModelEngineCleanupSuccess = asStr(map, "geyserModelEngineCleanupSuccess", cfg.messages.geyserModelEngineCleanupSuccess);
+        cfg.messages.geyserModelEngineCleanupFailed = asStr(map, "geyserModelEngineCleanupFailed", cfg.messages.geyserModelEngineCleanupFailed);
     }
 
     /**
