@@ -1,5 +1,5 @@
 # Same default values as core
-configVersion: 1
+configVersion: 2
 enabled: true
 # Language file to use (en, es, ja, de, fr, zh)
 # Available languages: English (en), Spanish (es), Japanese (ja), German (de), French (fr), Chinese (zh)
@@ -33,3 +33,8 @@ postUpdate:
   notifyPlayersWithPermission: true
   runRestartCommand: false
   restartCommand: "end"
+discordWebhook:
+  enabled: false  # Enable Discord webhook notifications
+  webhookUrl: ""  # Your Discord webhook URL here (e.g., https://discord.com/api/webhooks/...)
+  notifyOnUpdate: true  # Send notification when plugins are updated
+  notifyOnError: false  # Send notification when update fails

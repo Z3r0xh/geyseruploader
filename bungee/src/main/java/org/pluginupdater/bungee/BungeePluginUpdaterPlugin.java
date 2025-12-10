@@ -203,6 +203,22 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
                         }
                     });
                     return;
+                } else if (args[0].equalsIgnoreCase("webhooktest")) {
+                    if (!sender.hasPermission("zpluginupdater.command.webhooktest")) {
+                        sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
+                        return;
+                    }
+                    ProxyServer.getInstance().getScheduler().runAsync(BungeePluginUpdaterPlugin.this, () -> {
+                        UpdaterService service = new UpdaterService(new BungeeLogger(), cfg);
+                        sender.sendMessage(new TextComponent(cfg.messages.prefix + "§7Sending Discord webhook test..."));
+                        boolean success = service.testDiscordWebhook();
+                        if (success) {
+                            sender.sendMessage(new TextComponent(cfg.messages.prefix + "§aDiscord webhook test sent successfully! Check your Discord channel."));
+                        } else {
+                            sender.sendMessage(new TextComponent(cfg.messages.prefix + "§cFailed to send Discord webhook test. Check console for details."));
+                        }
+                    });
+                    return;
                 }
             }
 
@@ -227,6 +243,7 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
                 if ("check".startsWith(input)) completions.add("check");
                 if ("reload".startsWith(input)) completions.add("reload");
                 if ("packtest".startsWith(input)) completions.add("packtest");
+                if ("webhooktest".startsWith(input)) completions.add("webhooktest");
 
                 return completions;
             }
