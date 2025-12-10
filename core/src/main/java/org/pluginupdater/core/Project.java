@@ -15,7 +15,7 @@ public enum Project {
     ITEMNBTAPI("itemnbtapi", "item-nbt-api"),
     // Geyser Extensions (go in Geyser-{Platform}/extensions/)
     GEYSERUTILS_EXTENSION("geyserutils-extension", "geyserutils-geyser"),
-    GEYSERMODELENGINE_EXTENSION("geysermodelengine-extension", "GeyserModelEnginePackGenerator"),
+    GEYSERMODELENGINE_EXTENSION("geysermodelengine-extension", "GeyserModelEngineExtension"),
     // Geyser-related Plugins (go in plugins/)
     GEYSERUTILS_PLUGIN("geyserutils-plugin", "geyserutils"),
     GEYSERMODELENGINE_PLUGIN("geysermodelengine-plugin", "GeyserModelEngine");

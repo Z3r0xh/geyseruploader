@@ -26,8 +26,7 @@ public class UpdaterService {
     private static final String VIAREWIND_JENKINS = "https://ci.viaversion.com/job/ViaRewind";
     private static final String VIAREWIND_LEGACY_JENKINS = "https://ci.viaversion.com/job/ViaRewind%20Legacy%20Support";
     private static final String GEYSERUTILS_GITHUB_API = "https://api.github.com/repos/GeyserExtensionists/GeyserUtils/releases/latest";
-    private static final String GEYSERMODELENGINE_EXT_GITHUB_API = "https://api.github.com/repos/xSquishyLiam/mc-GeyserModelEnginePackGenerator-extension/releases/latest";
-    private static final String GEYSERMODELENGINE_PLUGIN_GITHUB_API = "https://api.github.com/repos/xSquishyLiam/mc-GeyserModelEngine-plugin/releases/latest";
+    private static final String GEYSERMODELENGINE_GITHUB_API = "https://api.github.com/repos/xSquishyLiam/mc-GeyserModelEngine-plugin/releases/latest";
     private static final String FAWE_JENKINS = "https://ci.athion.net/job/FastAsyncWorldEdit";
     private static final String PLACEHOLDERAPI_GITHUB_API = "https://api.github.com/repos/PlaceholderAPI/PlaceholderAPI";
     private static final String ITEMNBTAPI_GITHUB_API = "https://api.github.com/repos/tr7zw/Item-NBT-API";
@@ -732,15 +731,15 @@ public class UpdaterService {
                 }
                 break;
             case GEYSERMODELENGINE_EXTENSION:
-                apiUrl = GEYSERMODELENGINE_EXT_GITHUB_API;
-                fileNameHint = "GeyserModelEnginePackGenerator";
+                apiUrl = GEYSERMODELENGINE_GITHUB_API;
+                fileNameHint = "GeyserModelEngineExtension";
                 break;
             case GEYSERMODELENGINE_PLUGIN:
                 // Plugin is Spigot only
                 if (platform != Platform.SPIGOT) {
                     throw new IOException("GeyserModelEngine plugin is only available for Spigot");
                 }
-                apiUrl = GEYSERMODELENGINE_PLUGIN_GITHUB_API;
+                apiUrl = GEYSERMODELENGINE_GITHUB_API;
                 fileNameHint = "GeyserModelEngine";
                 break;
             default:
