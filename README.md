@@ -1,4 +1,4 @@
-# PluginUpdater
+# zPluginUpdater
 
 **Fork of GeyserUpdater** - Modified to support automatic updates for multiple plugins beyond just Geyser and Floodgate.
 
@@ -32,10 +32,10 @@ Auto-update plugin for Minecraft servers. Supports Spigot (Paper, etc.), BungeeC
   - At specified intervals (e.g., every 12 hours)
   - When a player with specified permissions logs in (configurable)
 - Manual commands with subcommands:
-  - Update plugins: `/pluginupdate-{platform}`
-  - Check versions: `/pluginupdate-{platform} check`
-  - Reload config: `/pluginupdate-{platform} reload`
-  - Test pack cleanup: `/pluginupdate-{platform} packtest`
+  - Update plugins: `/zpluginupdate-{platform}`
+  - Check versions: `/zpluginupdate-{platform} check`
+  - Reload config: `/zpluginupdate-{platform} reload`
+  - Test pack cleanup: `/zpluginupdate-{platform} packtest`
 - Semantic version comparison to prevent downgrades
 - Special cleanup handling for GeyserModelEngineExtension extension updates
 - Configurable messages, targets, intervals, and restart commands
@@ -47,9 +47,9 @@ Auto-update plugin for Minecraft servers. Supports Spigot (Paper, etc.), BungeeC
 - Steps:
   - Run `mvn package` in the cloned folder
   - Generated artifacts:
-    - spigot/target/PluginUpdater-spigot-1.0.0.jar
-    - bungee/target/PluginUpdater-bungee-1.0.0.jar
-    - velocity/target/PluginUpdater-velocity-1.0.0.jar
+    - spigot/target/zPluginUpdater-spigot-1.0.0.jar
+    - bungee/target/zPluginUpdater-bungee-1.0.0.jar
+    - velocity/target/zPluginUpdater-velocity-1.0.0.jar
 
 ## Installation
 - Place the appropriate JAR for your server type in the plugins folder
@@ -60,22 +60,31 @@ Auto-update plugin for Minecraft servers. Supports Spigot (Paper, etc.), BungeeC
 ## Commands & Permissions
 
 ### Spigot
-- `/pluginupdate-spigot` - Execute update check (permission: pluginupdater.admin)
-- `/pluginupdate-spigot check` - Display version information (permission: pluginupdater.check)
-- `/pluginupdate-spigot reload` - Reload configuration (permission: pluginupdater.reload)
-- `/pluginupdate-spigot packtest` - Simulate GMEPG update (permission: pluginupdater.packtest)
+- `/zpluginupdate-spigot` - Execute update check (permission: zpluginupdater.command.update)
+- `/zpluginupdate-spigot check` - Display version information (permission: zpluginupdater.command.check)
+- `/zpluginupdate-spigot reload` - Reload configuration (permission: zpluginupdater.command.reload)
+- `/zpluginupdate-spigot packtest` - Simulate GMEPG update (permission: zpluginupdater.command.packtest)
 
 ### BungeeCord
-- `/pluginupdate-bungee` - Execute update check (permission: pluginupdater.admin)
-- `/pluginupdate-bungee check` - Display version information (permission: pluginupdater.check)
-- `/pluginupdate-bungee reload` - Reload configuration (permission: pluginupdater.reload)
-- `/pluginupdate-bungee packtest` - Simulate GMEPG update (permission: pluginupdater.packtest)
+- `/zpluginupdate-bungee` - Execute update check (permission: zpluginupdater.command.update)
+- `/zpluginupdate-bungee check` - Display version information (permission: zpluginupdater.command.check)
+- `/zpluginupdate-bungee reload` - Reload configuration (permission: zpluginupdater.command.reload)
+- `/zpluginupdate-bungee packtest` - Simulate GMEPG update (permission: zpluginupdater.command.packtest)
 
 ### Velocity
-- `/pluginupdate-velocity` - Execute update check (permission: pluginupdater.admin)
-- `/pluginupdate-velocity check` - Display version information (permission: pluginupdater.check)
-- `/pluginupdate-velocity reload` - Reload configuration (permission: pluginupdater.reload)
-- `/pluginupdate-velocity packtest` - Simulate GMEPG update (permission: pluginupdater.packtest)
+- `/zpluginupdate-velocity` - Execute update check (permission: zpluginupdater.command.update)
+- `/zpluginupdate-velocity check` - Display version information (permission: zpluginupdater.command.check)
+- `/zpluginupdate-velocity reload` - Reload configuration (permission: zpluginupdater.command.reload)
+- `/zpluginupdate-velocity packtest` - Simulate GMEPG update (permission: zpluginupdater.command.packtest)
+
+### Permission Hierarchy
+All permissions follow a hierarchical structure:
+- `zpluginupdater.*` - Grants all permissions
+  - `zpluginupdater.command` - Grants access to all commands
+    - `zpluginupdater.command.update` - Execute update check
+    - `zpluginupdater.command.check` - Display version information
+  - `zpluginupdater.command.reload` - Reload configuration
+  - `zpluginupdater.command.packtest` - Simulate GMEPG update
 
 ## Configuration File (config.yml)
 
