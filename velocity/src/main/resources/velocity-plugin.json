@@ -1,6 +1,6 @@
 {
-  "id": "pluginupdater",
-  "name": "PluginUpdater",
+  "id": "zpluginupdater",
+  "name": "zPluginUpdater",
   "version": "1.0.0",
   "description": "Auto-updater for Geyser, Floodgate and other plugins",
   "authors": ["neha", "Z3r0xh"],

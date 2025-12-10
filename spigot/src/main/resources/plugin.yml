@@ -1,4 +1,4 @@
-name: PluginUpdater
+name: zPluginUpdater
 main: org.pluginupdater.spigot.SpigotPluginUpdaterPlugin
 version: 1.0.0
 api-version: 1.19
@@ -7,35 +7,35 @@ description: Automatically downloads and updates plugins from official sources
 authors: [neha, Z3r0xh]
 softdepend: [Geyser-Spigot, floodgate, ProtocolLib, ViaVersion, ViaBackwards, ViaRewind]
 commands:
-  pluginupdate-spigot:
+  zpluginupdate-spigot:
     description: Execute plugin update check or reload config
-    usage: /pluginupdate-spigot [reload|check|packtest]
-    permission: pluginupdater.command
+    usage: /zpluginupdate-spigot [reload|check|packtest]
+    permission: zpluginupdater.command
 permissions:
-  pluginupdater.*:
-    description: Grants all PluginUpdater permissions
+  zpluginupdater.*:
+    description: Grants all zPluginUpdater permissions
     default: op
     children:
-      pluginupdater.command: true
-      pluginupdater.command.update: true
-      pluginupdater.command.check: true
-      pluginupdater.command.reload: true
-      pluginupdater.command.packtest: true
-  pluginupdater.command:
-    description: Access to PluginUpdater commands
+      zpluginupdater.command: true
+      zpluginupdater.command.update: true
+      zpluginupdater.command.check: true
+      zpluginupdater.command.reload: true
+      zpluginupdater.command.packtest: true
+  zpluginupdater.command:
+    description: Access to zPluginUpdater commands
     default: op
     children:
-      pluginupdater.command.update: true
-      pluginupdater.command.check: true
-  pluginupdater.command.update:
+      zpluginupdater.command.update: true
+      zpluginupdater.command.check: true
+  zpluginupdater.command.update:
     description: Can trigger manual plugin updates
     default: op
-  pluginupdater.command.check:
+  zpluginupdater.command.check:
     description: Can check plugin versions without updating
     default: op
-  pluginupdater.command.reload:
-    description: Can reload PluginUpdater configuration
+  zpluginupdater.command.reload:
+    description: Can reload zPluginUpdater configuration
     default: op
-  pluginupdater.command.packtest:
+  zpluginupdater.command.packtest:
     description: Can simulate GeyserModelEngineExtension update for testing
     default: op
