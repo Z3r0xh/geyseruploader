@@ -231,6 +231,22 @@ public class VelocityPluginUpdaterPlugin {
                         }
                     }).schedule();
                     return;
+                } else if (args[0].equalsIgnoreCase("webhooktest")) {
+                    if (!src.hasPermission("zpluginupdater.command.webhooktest")) {
+                        send(src, cfg.messages.prefix + cfg.messages.noPermission);
+                        return;
+                    }
+                    proxy.getScheduler().buildTask(VelocityPluginUpdaterPlugin.this, () -> {
+                        UpdaterService service = new UpdaterService(new VelocityLogger(), cfg);
+                        send(src, cfg.messages.prefix + "§7Sending Discord webhook test...");
+                        boolean success = service.testDiscordWebhook();
+                        if (success) {
+                            send(src, cfg.messages.prefix + "§aDiscord webhook test sent successfully! Check your Discord channel.");
+                        } else {
+                            send(src, cfg.messages.prefix + "§cFailed to send Discord webhook test. Check console for details.");
+                        }
+                    }).schedule();
+                    return;
                 }
             }
 
@@ -256,6 +272,7 @@ public class VelocityPluginUpdaterPlugin {
                 if ("check".startsWith(input)) completions.add("check");
                 if ("reload".startsWith(input)) completions.add("reload");
                 if ("packtest".startsWith(input)) completions.add("packtest");
+                if ("webhooktest".startsWith(input)) completions.add("webhooktest");
 
                 return completions;
             }
