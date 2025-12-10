@@ -24,7 +24,7 @@ public class Config {
     public AdminLogin adminLogin = new AdminLogin();
     public static class AdminLogin {
         public boolean enabled = true;
-        public String permission = "pluginupdater.admin";
+        public String permission = "zpluginupdater.admin";
     }
 
     public Targets targets = new Targets();
@@ -79,7 +79,7 @@ public class Config {
 
     public Messages messages = new Messages();
     public static class Messages {
-        public String prefix = "§a[PluginUpdater]§r ";
+        public String prefix = "§a[zPluginUpdater]§r ";
         public String checking = "§7Checking for updates...";
         public String upToDate = "§a{project}§r is up to date.";
         public String updated = "§e{project}§r has been updated to the latest build.";
@@ -93,7 +93,7 @@ public class Config {
         public String nothingToDo = "§eNo valid targets. Please check config.yml.";
         public String done = "§aUpdate check completed.";
         public String noPermission = "§cYou do not have permission.";
-        public String pluginDisabled = "§c[PluginUpdater] disabled by config";
+        public String pluginDisabled = "§c[zPluginUpdater] disabled by config";
         public String downloadFailed = "§cDownload failed: {error}";
         public String hashComparisonFailed = "§eHash comparison failed. Continuing with overwrite update: {error}";
         public String migrationFailed = "§cFailed to move {file}: {error}";
