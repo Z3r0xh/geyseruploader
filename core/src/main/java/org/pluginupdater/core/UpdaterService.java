@@ -23,7 +23,7 @@ public class UpdaterService {
     private static final String ANSI_CYAN = "\u001B[36m";
     private static final String ANSI_GRAY = "\u001B[90m";
 
-    private static final String USER_AGENT = "PluginUpdater/1.0.0 (https://github.com/yourusername/pluginupdater)";
+    private static final String USER_AGENT = "zPluginUpdater/1.0.0 (https://github.com/Z3r0xh/geyseruploader)";
     private static final String GEYSER_BASE = "https://download.geysermc.org/v2/projects";
     private static final String LUCKPERMS_API = "https://metadata.luckperms.net/data/downloads";
     private static final String PACKETEVENTS_JENKINS = "https://ci.codemc.io/job/retrooper/job/packetevents";
@@ -75,6 +75,15 @@ public class UpdaterService {
         for (Project p : targets) {
             results.add(updateOne(p, platform, pluginsDir));
         }
+
+        // Send Discord notification if enabled
+        try {
+            DiscordNotifier discordNotifier = new DiscordNotifier(cfg, log);
+            discordNotifier.notifyUpdates(results);
+        } catch (Exception e) {
+            log.warn("Failed to send Discord notification: " + e.getMessage());
+        }
+
         return results;
     }
 
@@ -123,8 +132,12 @@ public class UpdaterService {
                 return VersionInfo.notInstalled(project, latestVersion);
             }
 
-            // Check if update is available by comparing version strings
-            boolean updateAvailable = isUpdateAvailable(installedVersion, latestVersion, project);
+            // Normalize filenames to remove browser download suffixes before comparing
+            String normalizedInstalled = normalizeFilename(installedVersion);
+            String normalizedLatest = normalizeFilename(latestVersion);
+
+            // Check if update is available by comparing normalized version strings
+            boolean updateAvailable = isUpdateAvailable(normalizedInstalled, normalizedLatest, project);
 
             if (updateAvailable) {
                 return VersionInfo.updateAvailable(project, installedVersion, latestVersion);
@@ -354,14 +367,58 @@ public class UpdaterService {
                     newFilename = extractFilenameFromUrl(downloadUrl);
                 }
 
+                // Normalize filenames to remove browser download suffixes like (1), (2), etc.
+                String normalizedExisting = normalizeFilename(existingFilename);
+                String normalizedNew = normalizeFilename(newFilename);
+
                 log.info(ANSI_CYAN + "Comparing versions - Existing: " + existingFilename + ", Latest: " + newFilename + ANSI_RESET);
 
-                // If filenames match, compare file sizes to detect updates
-                if (existingFilename.equals(newFilename)) {
+                // If normalized filenames match, compare file sizes to detect updates
+                if (normalizedExisting.equals(normalizedNew)) {
                     long existingSize = Files.size(existing);
                     long newSize = Files.size(tmp);
 
-                    if (existingSize == newSize) {
+                    // Special case: SNAPSHOT versions should always update if from GitHub releases
+                    // because they can change without changing version number
+                    boolean isSnapshot = normalizedNew.toLowerCase().contains("-snapshot");
+                    boolean isGitHubRelease = project.isGeyserExtension() || project.isGeyserRelatedPlugin() ||
+                                              project == Project.GEYSERMODELENGINE_EXTENSION ||
+                                              project == Project.GEYSERMODELENGINE_PLUGIN ||
+                                              project == Project.GEYSERUTILS_EXTENSION ||
+                                              project == Project.GEYSERUTILS_PLUGIN;
+
+                    if (isSnapshot && isGitHubRelease) {
+                        // For SNAPSHOT versions from GitHub, check if we should update
+                        if (newSize < 1_000_000 && existingSize > 10_000_000) {
+                            // Downloaded file is suspiciously small - likely an error page or rate limit response
+                            Files.deleteIfExists(tmp);
+                            log.warn(ANSI_RED + project.apiName() + " SNAPSHOT download appears corrupted (size: " + newSize + " bytes vs existing " + existingSize + " bytes) - skipping update" + ANSI_RESET);
+                            return new UpdateOutcome(project, false, false, Optional.of("Downloaded file too small - possible download error"));
+                        } else if (existingSize == newSize) {
+                            // Same size - check if GitHub release is newer than local file
+                            try {
+                                long localModified = Files.getLastModifiedTime(existing).toMillis();
+                                Long githubPublished = getGitHubReleaseTimestamp(project);
+
+                                if (githubPublished != null && githubPublished > localModified) {
+                                    log.info(ANSI_YELLOW + project.apiName() + " SNAPSHOT has same size but GitHub release is newer - updating" + ANSI_RESET);
+                                    // Continue with update
+                                } else {
+                                    Files.deleteIfExists(tmp);
+                                    log.info(ANSI_GREEN + project.apiName() + " is a SNAPSHOT build and local file is up to date" + ANSI_RESET);
+                                    return new UpdateOutcome(project, false, true, Optional.empty());
+                                }
+                            } catch (Exception e) {
+                                // If we can't get timestamp, skip update to be safe
+                                Files.deleteIfExists(tmp);
+                                log.info(ANSI_YELLOW + project.apiName() + " is a SNAPSHOT build with matching size - skipping update (could not verify timestamp)" + ANSI_RESET);
+                                return new UpdateOutcome(project, false, true, Optional.empty());
+                            }
+                        } else {
+                            log.info(ANSI_YELLOW + project.apiName() + " SNAPSHOT has different size: " + existingSize + " -> " + newSize + " bytes - updating" + ANSI_RESET);
+                            // Continue with update
+                        }
+                    } else if (existingSize == newSize) {
                         Files.deleteIfExists(tmp);
                         log.info(ANSI_GREEN + project.apiName() + " is already up to date (filename and size match)" + ANSI_RESET);
                         return new UpdateOutcome(project, false, true, Optional.empty());
@@ -370,16 +427,16 @@ public class UpdaterService {
                         // Continue with update
                     }
                 } else {
-                    // Filenames are different - compare versions to prevent downgrade
-                    int versionComparison = compareVersions(existingFilename, newFilename);
+                    // Filenames are different - compare normalized versions to prevent downgrade
+                    int versionComparison = compareVersions(normalizedExisting, normalizedNew);
                     if (versionComparison > 0) {
                         // Existing version is NEWER than the "latest" - prevent downgrade
                         Files.deleteIfExists(tmp);
-                        log.warn(ANSI_RED + project.apiName() + " - Existing version (" + existingFilename + ") is newer than available version (" + newFilename + "). Skipping downgrade." + ANSI_RESET);
+                        log.warn(ANSI_RED + project.apiName() + " - Existing version (" + normalizedExisting + ") is newer than available version (" + normalizedNew + "). Skipping downgrade." + ANSI_RESET);
                         return new UpdateOutcome(project, false, true, Optional.empty());
                     } else if (versionComparison < 0) {
                         // New version is NEWER - proceed with update
-                        log.info(ANSI_YELLOW + project.apiName() + " has a new version available: " + newFilename + ANSI_RESET);
+                        log.info(ANSI_YELLOW + project.apiName() + " has a new version available: " + normalizedNew + ANSI_RESET);
                     } else {
                         // Versions are equal (but filenames differ slightly) - skip update
                         Files.deleteIfExists(tmp);
@@ -440,7 +497,12 @@ public class UpdaterService {
             return getItemNBTAPIUrl();
         } else {
             // GeyserMC API (Geyser & Floodgate)
-            return GEYSER_BASE + "/" + project.apiName() + "/versions/latest/builds/latest/downloads/" + platform.apiName();
+            // Special case: Floodgate uses "bungee" instead of "bungeecord" in the API
+            String platformName = platform.apiName();
+            if (project == Project.FLOODGATE && platform == Platform.BUNGEECORD) {
+                platformName = "bungee";
+            }
+            return GEYSER_BASE + "/" + project.apiName() + "/versions/latest/builds/latest/downloads/" + platformName;
         }
     }
 
@@ -1172,6 +1234,27 @@ public class UpdaterService {
         }
     }
 
+    /**
+     * Test Discord webhook by sending a test notification
+     * This is used for testing purposes via the webhooktest command
+     * @return true if the test was successful, false otherwise
+     */
+    public boolean testDiscordWebhook() {
+        // Allow testing even if disabled - just check if URL is configured
+        if (cfg.discordWebhook.webhookUrl == null || cfg.discordWebhook.webhookUrl.trim().isEmpty()) {
+            log.warn(ANSI_YELLOW + "Discord webhook URL is not configured in config.yml" + ANSI_RESET);
+            return false;
+        }
+
+        try {
+            DiscordNotifier notifier = new DiscordNotifier(cfg, log);
+            return notifier.sendTestNotification();
+        } catch (Exception e) {
+            log.warn(ANSI_RED + "Failed to send Discord webhook test: " + e.getMessage() + ANSI_RESET);
+            return false;
+        }
+    }
+
 
     private Path getGMEPGFolder(Path extensionsFolder) {
         // Try different possible folder names (new and old names for backwards compatibility)
@@ -1332,6 +1415,18 @@ public class UpdaterService {
                             return name.startsWith("geyser-");
                         }
 
+                        // Special case for ViaRewind to avoid matching ViaRewind-Legacy-Support
+                        if (project == Project.VIAREWIND) {
+                            // Must contain "viarewind" but NOT "legacy"
+                            return name.contains("viarewind") && !name.contains("legacy");
+                        }
+
+                        // Special case for ViaRewind-Legacy to only match legacy versions
+                        if (project == Project.VIAREWIND_LEGACY) {
+                            // Must contain both "viarewind" and "legacy"
+                            return name.contains("viarewind") && name.contains("legacy");
+                        }
+
                         return name.contains(fileHintLower);
                     })
                     .collect(Collectors.toList());
@@ -1345,6 +1440,81 @@ public class UpdaterService {
         } catch (IOException e) {
             throw e;
         }
+    }
+
+    /**
+     * Get the published_at timestamp of the latest GitHub release for a project
+     * Returns timestamp in milliseconds, or null if not available
+     */
+    private Long getGitHubReleaseTimestamp(Project project) throws IOException {
+        String apiUrl;
+
+        switch (project) {
+            case GEYSERUTILS_EXTENSION:
+            case GEYSERUTILS_PLUGIN:
+                apiUrl = GEYSERUTILS_GITHUB_API;
+                break;
+            case GEYSERMODELENGINE_EXTENSION:
+            case GEYSERMODELENGINE_PLUGIN:
+                apiUrl = GEYSERMODELENGINE_GITHUB_API;
+                break;
+            default:
+                return null; // Not a GitHub release project
+        }
+
+        HttpRequest req = createRequestBuilder(apiUrl)
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                return extractPublishedTimestamp(resp.body());
+            }
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    /**
+     * Extract published_at timestamp from GitHub API JSON response
+     * Format: "published_at":"2025-10-15T04:47:55Z"
+     */
+    private Long extractPublishedTimestamp(String json) {
+        String searchPattern = "\"published_at\":\"";
+        int startPos = json.indexOf(searchPattern);
+
+        if (startPos != -1) {
+            int dateStart = startPos + searchPattern.length();
+            int dateEnd = json.indexOf("\"", dateStart);
+            if (dateEnd != -1) {
+                String dateStr = json.substring(dateStart, dateEnd);
+                try {
+                    // Parse ISO 8601 timestamp: "2025-10-15T04:47:55Z"
+                    return java.time.Instant.parse(dateStr).toEpochMilli();
+                } catch (Exception e) {
+                    log.warn(ANSI_YELLOW + "Failed to parse GitHub timestamp: " + dateStr + ANSI_RESET);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Normalize filename by removing browser download suffixes like (1), (2), etc.
+     * Examples:
+     * - "Geyser-BungeeCord (11).jar" -> "Geyser-BungeeCord.jar"
+     * - "geyserutils-geyser-1.0-SNAPSHOT (10).jar" -> "geyserutils-geyser-1.0-SNAPSHOT.jar"
+     * - "plugin-1.2.3.jar" -> "plugin-1.2.3.jar" (no change)
+     */
+    private String normalizeFilename(String filename) {
+        // Pattern: " (N).jar" where N is one or more digits
+        // Remove this pattern if it exists at the end of the filename
+        return filename.replaceAll("\\s+\\(\\d+\\)\\.jar$", ".jar");
     }
 
     private String extractFilenameFromUrl(String url) {

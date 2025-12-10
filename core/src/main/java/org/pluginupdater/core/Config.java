@@ -1,7 +1,7 @@
 package org.pluginupdater.core;
 
 public class Config {
-    public static final int CURRENT_CONFIG_VERSION = 1;
+    public static final int CURRENT_CONFIG_VERSION = 2;
 
     public int configVersion = CURRENT_CONFIG_VERSION;
 
@@ -77,6 +77,14 @@ public class Config {
         public String restartCommand = "restart";
     }
 
+    public DiscordWebhook discordWebhook = new DiscordWebhook();
+    public static class DiscordWebhook {
+        public boolean enabled = false;  // Default false, opt-in
+        public String webhookUrl = "";  // Discord webhook URL (e.g., https://discord.com/api/webhooks/...)
+        public boolean notifyOnUpdate = true;  // Send notification when a plugin is updated
+        public boolean notifyOnError = false;  // Send notification when an update fails
+    }
+
     public Messages messages = new Messages();
     public static class Messages {
         public String prefix = "§a[zPluginUpdater]§r ";
@@ -106,7 +114,7 @@ public class Config {
 
         // Version check messages
         public String versionCheckHeader = "§e§l═══════════════════════════════════";
-        public String versionCheckTitle = "§a§lPluginUpdater §7Version Check";
+        public String versionCheckTitle = "§a§lzPluginUpdater §7Version Check";
         public String versionCheckFooter = "§e§l═══════════════════════════════════";
         public String versionCheckColumnHeaders = "";  // No column headers for compact format
         public String versionCheckSeparator = "";  // No separator for compact format

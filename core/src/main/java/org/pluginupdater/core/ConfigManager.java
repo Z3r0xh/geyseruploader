@@ -139,6 +139,13 @@ public class ConfigManager {
             cfg.postUpdate.runRestartCommand = asBool(postUpdate, "runRestartCommand", cfg.postUpdate.runRestartCommand);
             cfg.postUpdate.restartCommand = asStr(postUpdate, "restartCommand", cfg.postUpdate.restartCommand);
 
+            // discordWebhook
+            Map<String, Object> discordWebhook = asMap(map, "discordWebhook");
+            cfg.discordWebhook.enabled = asBool(discordWebhook, "enabled", cfg.discordWebhook.enabled);
+            cfg.discordWebhook.webhookUrl = asStr(discordWebhook, "webhookUrl", cfg.discordWebhook.webhookUrl);
+            cfg.discordWebhook.notifyOnUpdate = asBool(discordWebhook, "notifyOnUpdate", cfg.discordWebhook.notifyOnUpdate);
+            cfg.discordWebhook.notifyOnError = asBool(discordWebhook, "notifyOnError", cfg.discordWebhook.notifyOnError);
+
             // Load messages from language file
             loadMessages(cfg);
 
@@ -300,8 +307,15 @@ public class ConfigManager {
             cfg.configVersion = 1;
         }
 
+        // Version 1 -> 2: Added Discord webhook support
+        if (fromVersion < 2) {
+            // Discord webhook configuration uses defaults (enabled=false, webhookUrl="")
+            // No migration needed, just update version
+            cfg.configVersion = 2;
+        }
+
         // Future migrations would go here
-        // if (fromVersion < 2) { ... }
+        // if (fromVersion < 3) { ... }
     }
 
     /**
@@ -319,13 +333,25 @@ public class ConfigManager {
             if (existingContent.contains("configVersion:")) {
                 // Replace existing configVersion
                 existingContent = existingContent.replaceFirst("configVersion:\\s*\\d+", "configVersion: " + cfg.configVersion);
-                Files.writeString(configPath, existingContent, StandardCharsets.UTF_8);
             } else {
                 // Add configVersion to the beginning
-                sb.append("configVersion: ").append(cfg.configVersion).append("\n");
-                sb.append(existingContent);
-                Files.writeString(configPath, sb.toString(), StandardCharsets.UTF_8);
+                existingContent = "configVersion: " + cfg.configVersion + "\n" + existingContent;
             }
+
+            // Add missing sections based on config version
+            if (cfg.configVersion >= 2 && !existingContent.contains("discordWebhook:")) {
+                // Add Discord webhook section at the end
+                if (!existingContent.endsWith("\n")) {
+                    existingContent += "\n";
+                }
+                existingContent += "discordWebhook:\n";
+                existingContent += "  enabled: false  # Enable Discord webhook notifications\n";
+                existingContent += "  webhookUrl: \"\"  # Your Discord webhook URL here (e.g., https://discord.com/api/webhooks/...)\n";
+                existingContent += "  notifyOnUpdate: true  # Send notification when plugins are updated\n";
+                existingContent += "  notifyOnError: false  # Send notification when update fails\n";
+            }
+
+            Files.writeString(configPath, existingContent, StandardCharsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();
         }
