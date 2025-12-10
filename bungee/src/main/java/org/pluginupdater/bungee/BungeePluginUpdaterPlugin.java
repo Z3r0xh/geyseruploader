@@ -232,33 +232,6 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
         }
     }
 
-    @EventHandler
-    public void onChat(net.md_5.bungee.api.event.ChatEvent event) {
-        if (event.isCancelled()) return;
-        if (!event.isCommand()) return;
-
-        String command = event.getMessage().toLowerCase().trim();
-        if (command.startsWith("/")) {
-            command = command.substring(1);
-        }
-
-        // Check for various forms of the GMEPG reload command
-        if (command.equals("geysermodelenginepackgenerator reload") ||
-            command.equals("gmepg reload") ||
-            command.startsWith("geysermodelenginepackgenerator reload ") ||
-            command.startsWith("gmepg reload ")) {
-
-            // Execute cleanup if pending before the extension reloads
-            if (cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled &&
-                cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate) {
-
-                Path pluginsDir = getDataFolder().toPath().getParent();
-                UpdaterService cleanupService = new UpdaterService(new BungeeLogger(), cfg);
-                cleanupService.executeCleanupIfPending(Platform.BUNGEECORD, pluginsDir);
-            }
-        }
-    }
-
     private void msg(CommandSender sender, String msg) {
         if (sender != null) send(sender, cfg.messages.prefix + msg);
         else info(msg);

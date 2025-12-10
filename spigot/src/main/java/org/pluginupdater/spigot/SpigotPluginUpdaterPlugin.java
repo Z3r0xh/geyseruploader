@@ -189,40 +189,6 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler
-    public void onPlayerCommand(org.bukkit.event.player.PlayerCommandPreprocessEvent event) {
-        handleCommandPreProcess(event.getMessage());
-    }
-
-    @EventHandler
-    public void onServerCommand(org.bukkit.event.server.ServerCommandEvent event) {
-        handleCommandPreProcess(event.getCommand());
-    }
-
-    private void handleCommandPreProcess(String command) {
-        // Check if this is a GeyserModelEnginePackGenerator reload command
-        String cmd = command.toLowerCase().trim();
-        if (cmd.startsWith("/")) {
-            cmd = cmd.substring(1);
-        }
-
-        // Check for various forms of the GMEPG reload command
-        if (cmd.equals("geysermodelenginepackgenerator reload") ||
-            cmd.equals("gmepg reload") ||
-            cmd.startsWith("geysermodelenginepackgenerator reload ") ||
-            cmd.startsWith("gmepg reload ")) {
-
-            // Execute cleanup if pending before the extension reloads
-            if (cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled &&
-                cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate) {
-
-                Path pluginsDir = getDataFolder().toPath().getParent();
-                UpdaterService cleanupService = new UpdaterService(new SpigotLogger(), cfg);
-                cleanupService.executeCleanupIfPending(Platform.SPIGOT, pluginsDir);
-            }
-        }
-    }
-
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!command.getName().equalsIgnoreCase("pluginupdate-spigot")) return false;
