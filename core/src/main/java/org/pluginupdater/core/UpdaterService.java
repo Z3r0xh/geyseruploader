@@ -143,8 +143,8 @@ public class UpdaterService {
         if (project == Project.VIAREWIND_LEGACY) return cfg.targets.viaPlugins.viaRewindLegacy;
         if (project == Project.GEYSERUTILS_EXTENSION) return cfg.targets.geyserExtensions.geyserUtils;
         if (project == Project.GEYSERUTILS_PLUGIN) return cfg.targets.geyserExtensions.geyserUtils;
-        if (project == Project.GEYSERMODELENGINE_EXTENSION) return cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled;
-        if (project == Project.GEYSERMODELENGINE_PLUGIN) return cfg.targets.geyserExtensions.geyserModelEngine;
+        if (project == Project.GEYSERMODELENGINE_EXTENSION) return cfg.targets.geyserExtensions.geyserModelEngineExtension.enabled;
+        if (project == Project.GEYSERMODELENGINE_PLUGIN) return cfg.targets.geyserExtensions.geyserModelEnginePlugin;
         return false;
     }
 
@@ -300,7 +300,7 @@ public class UpdaterService {
             targets.add(Project.GEYSERUTILS_EXTENSION);
             targets.add(Project.GEYSERUTILS_PLUGIN);
         }
-        if (cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled) {
+        if (cfg.targets.geyserExtensions.geyserModelEngineExtension.enabled) {
             targets.add(Project.GEYSERMODELENGINE_EXTENSION);
         }
         if (cfg.targets.geyserExtensions.geyserModelEngine) {
@@ -403,7 +403,7 @@ public class UpdaterService {
             FileUtils.atomicMove(tmp, dest);
 
             // If this is GeyserModelEnginePackGenerator and cleanOnUpdate is enabled, create cleanup marker
-            if (project == Project.GEYSERMODELENGINE_EXTENSION && cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate) {
+            if (project == Project.GEYSERMODELENGINE_EXTENSION && cfg.targets.geyserExtensions.geyserModelEngineExtension.cleanOnUpdate) {
                 createCleanupMarker(targetDir);
             }
 
@@ -1120,12 +1120,12 @@ public class UpdaterService {
      * This is used for testing purposes via the packtest command
      */
     public boolean simulateGMEPGUpdate(Platform platform, Path pluginsDir) {
-        if (!cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.enabled) {
+        if (!cfg.targets.geyserExtensions.geyserModelEngineExtension.enabled) {
             log.warn("GeyserModelEnginePackGenerator is not enabled in config");
             return false;
         }
 
-        if (!cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate) {
+        if (!cfg.targets.geyserExtensions.geyserModelEngineExtension.cleanOnUpdate) {
             log.warn("cleanOnUpdate is not enabled for GeyserModelEnginePackGenerator");
             return false;
         }
@@ -1166,9 +1166,11 @@ public class UpdaterService {
 
 
     private Path getGMEPGFolder(Path extensionsFolder) {
-        // Try different possible folder names
+        // Try different possible folder names (new and old names for backwards compatibility)
         String[] possibleNames = {
-            "GeyserModelEnginePackGenerator",
+            "GeyserModelEngineExtension",
+            "geysermodelengineextension",
+            "GeyserModelEnginePackGenerator",  // Old name for backwards compatibility
             "geysermodelenginepackgenerator",
             "Geyser-ModelEnginePackGenerator"
         };
@@ -1180,13 +1182,13 @@ public class UpdaterService {
             }
         }
 
-        // If not found by name, search for any folder containing "modelengine" and "pack"
+        // If not found by name, search for any folder containing "modelengine"
         try {
             return Files.list(extensionsFolder)
                 .filter(Files::isDirectory)
                 .filter(p -> {
                     String name = p.getFileName().toString().toLowerCase();
-                    return name.contains("modelengine") && name.contains("pack");
+                    return name.contains("modelengine");
                 })
                 .findFirst()
                 .orElse(null);

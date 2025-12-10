@@ -24,9 +24,10 @@ targets:
     useDevBuilds: false  # false = stable releases from GitHub, true = dev builds from Jenkins
   geyserExtensions:
     geyserUtils: false  # Downloads extension + plugin for all platforms
-    geyserModelEnginePackGenerator:
-      enabled: false  # Downloads GeyserModelEnginePackGenerator extension (all platforms)
+    geyserModelEngineExtension:
+      enabled: false  # Downloads GeyserModelEngineExtension (all platforms)
       cleanOnUpdate: true  # Clean extension folder on update (preserves input/ folder)
+    geyserModelEnginePlugin: false  # Downloads GeyserModelEngine plugin (Spigot only)
 postUpdate:
   notifyConsole: true
   notifyPlayersWithPermission: true
