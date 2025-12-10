@@ -36,7 +36,7 @@
   </dependencies>
 
   <build>
-    <finalName>PluginUpdater-spigot-${project.version}</finalName>
+    <finalName>zPluginUpdater-spigot-${project.version}</finalName>
     <resources>
       <resource>
         <directory>src/main/resources</directory>

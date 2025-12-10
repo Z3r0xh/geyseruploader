@@ -42,7 +42,7 @@
   </dependencies>
 
   <build>
-    <finalName>PluginUpdater-velocity-${project.version}</finalName>
+    <finalName>zPluginUpdater-velocity-${project.version}</finalName>
     <resources>
       <resource>
         <directory>src/main/resources</directory>
