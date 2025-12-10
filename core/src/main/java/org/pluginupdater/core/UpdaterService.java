@@ -356,8 +356,22 @@ public class UpdaterService {
                     return new UpdateOutcome(project, false, true, Optional.empty());
                 }
 
-                // Filenames are different, proceed with update
-                log.info(project.apiName() + " has a new version available: " + newFilename);
+                // Compare versions to prevent downgrade
+                int versionComparison = compareVersions(existingFilename, newFilename);
+                if (versionComparison > 0) {
+                    // Existing version is NEWER than the "latest" - prevent downgrade
+                    Files.deleteIfExists(tmp);
+                    log.warn(project.apiName() + " - Existing version (" + existingFilename + ") is newer than available version (" + newFilename + "). Skipping downgrade.");
+                    return new UpdateOutcome(project, false, true, Optional.empty());
+                } else if (versionComparison < 0) {
+                    // New version is NEWER - proceed with update
+                    log.info(project.apiName() + " has a new version available: " + newFilename);
+                } else {
+                    // Versions are equal (but filenames differ slightly) - skip update
+                    Files.deleteIfExists(tmp);
+                    log.info(project.apiName() + " versions are equivalent, skipping update");
+                    return new UpdateOutcome(project, false, true, Optional.empty());
+                }
             }
 
             // Determine destination
@@ -1185,6 +1199,70 @@ public class UpdaterService {
                     log.warn("Failed to delete " + path + ": " + e.getMessage());
                 }
             });
+    }
+
+    /**
+     * Compare two version strings extracted from filenames
+     * Returns: negative if version1 < version2, positive if version1 > version2, zero if equal
+     *
+     * Extracts version numbers from filenames like:
+     * - "plugin-1.2.3.jar" -> [1, 2, 3]
+     * - "Plugin-v2.0.jar" -> [2, 0]
+     * - "item-nbt-api-plugin-2.15.0.jar" -> [2, 15, 0]
+     */
+    private int compareVersions(String filename1, String filename2) {
+        try {
+            int[] version1 = extractVersionNumbers(filename1);
+            int[] version2 = extractVersionNumbers(filename2);
+
+            // Compare each version component
+            int maxLength = Math.max(version1.length, version2.length);
+            for (int i = 0; i < maxLength; i++) {
+                int v1 = i < version1.length ? version1[i] : 0;
+                int v2 = i < version2.length ? version2[i] : 0;
+
+                if (v1 != v2) {
+                    return Integer.compare(v1, v2);
+                }
+            }
+
+            return 0; // Versions are equal
+        } catch (Exception e) {
+            // If version extraction fails, treat as equal (fallback to filename comparison)
+            log.warn("Failed to compare versions for: " + filename1 + " vs " + filename2 + " - " + e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Extract version numbers from a filename
+     * Examples:
+     * - "PlaceholderAPI-2.11.6.jar" -> [2, 11, 6]
+     * - "item-nbt-api-plugin-2.15.0.jar" -> [2, 15, 0]
+     * - "Geyser-Spigot.jar" -> [] (no version)
+     */
+    private int[] extractVersionNumbers(String filename) {
+        // Remove .jar extension
+        String nameWithoutExt = filename.replace(".jar", "");
+
+        // Find version pattern: sequences of digits separated by dots
+        // Match patterns like: 1.2.3, 2.0, 10.15.3
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d+)\\.(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?");
+        java.util.regex.Matcher matcher = pattern.matcher(nameWithoutExt);
+
+        if (matcher.find()) {
+            java.util.List<Integer> versions = new java.util.ArrayList<>();
+            for (int i = 1; i <= matcher.groupCount(); i++) {
+                String group = matcher.group(i);
+                if (group != null) {
+                    versions.add(Integer.parseInt(group));
+                }
+            }
+            return versions.stream().mapToInt(Integer::intValue).toArray();
+        }
+
+        // No version found
+        return new int[0];
     }
 
     /**
