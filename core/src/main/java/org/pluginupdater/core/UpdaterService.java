@@ -1323,8 +1323,16 @@ public class UpdaterService {
             List<Path> matches = Files.list(pluginsDir)
                     .filter(p -> {
                         String name = p.getFileName().toString().toLowerCase(Locale.ROOT);
-                        return name.endsWith(".jar") &&
-                                name.contains(fileHintLower);
+                        if (!name.endsWith(".jar")) return false;
+
+                        // Special case for Geyser to avoid matching GeyserUtils/GeyserModelEngine
+                        if (project == Project.GEYSER) {
+                            // Must start with "geyser-" (case insensitive) to match Geyser-Spigot.jar, Geyser-BungeeCord.jar, etc.
+                            // This excludes geyserutils and geysermodelengine
+                            return name.startsWith("geyser-");
+                        }
+
+                        return name.contains(fileHintLower);
                     })
                     .collect(Collectors.toList());
             if (matches.isEmpty()) return null;
