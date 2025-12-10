@@ -395,9 +395,9 @@ public class UpdaterService {
             // Move atomically
             FileUtils.atomicMove(tmp, dest);
 
-            // If this is GeyserModelEnginePackGenerator and cleanOnUpdate is enabled, clean immediately
+            // If this is GeyserModelEnginePackGenerator and cleanOnUpdate is enabled, create cleanup marker
             if (project == Project.GEYSERMODELENGINE_EXTENSION && cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate) {
-                executeGMEPGCleanup(targetDir);
+                createCleanupMarker(targetDir);
             }
 
             return new UpdateOutcome(project, true, false, Optional.empty());
@@ -1034,25 +1034,56 @@ public class UpdaterService {
     }
 
     /**
-     * Execute immediate cleanup of GeyserModelEnginePackGenerator folder
-     * Deletes all files except input/ folder and .jar files
+     * Create a cleanup marker for GeyserModelEnginePackGenerator
+     * The cleanup will be executed on server shutdown
      */
-    private void executeGMEPGCleanup(Path extensionsFolder) {
+    private void createCleanupMarker(Path extensionsFolder) {
         try {
             Path gmepgFolder = getGMEPGFolder(extensionsFolder);
             if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
-                log.warn("Cannot clean: GeyserModelEnginePackGenerator folder not found");
+                log.warn("Cannot create cleanup marker: GeyserModelEnginePackGenerator folder not found");
                 return;
             }
 
-            log.info("Cleaning GeyserModelEnginePackGenerator folder...");
+            Path markerFile = gmepgFolder.resolve(".cleanup-pending");
+            if (!Files.exists(markerFile)) {
+                Files.createFile(markerFile);
+                log.info("Created cleanup marker - will clean on server shutdown");
+            }
+        } catch (IOException e) {
+            log.warn("Failed to create cleanup marker: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Execute cleanup on server shutdown if marker exists
+     * This should be called when the plugin is being disabled
+     */
+    public void executeCleanupOnShutdown(Platform platform, Path pluginsDir) {
+        try {
+            Path extensionsFolder = findGeyserExtensionsFolder(platform, pluginsDir);
+            if (extensionsFolder == null) {
+                return;
+            }
+
+            Path gmepgFolder = getGMEPGFolder(extensionsFolder);
+            if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
+                return;
+            }
+
+            Path markerFile = gmepgFolder.resolve(".cleanup-pending");
+            if (!Files.exists(markerFile)) {
+                return; // No cleanup pending
+            }
+
+            log.info("Cleanup marker detected, cleaning GeyserModelEnginePackGenerator folder on shutdown...");
 
             // Delete all files and folders except input/ and .jar files
             Files.list(gmepgFolder)
                 .filter(path -> {
                     String name = path.getFileName().toString();
-                    // Keep .jar files and input/ folder
-                    return !name.endsWith(".jar") && !name.equals("input");
+                    // Keep .jar files, .cleanup-pending marker (will be deleted at the end), and input/ folder
+                    return !name.endsWith(".jar") && !name.equals(".cleanup-pending") && !name.equals("input");
                 })
                 .forEach(path -> {
                     try {
@@ -1068,6 +1099,8 @@ public class UpdaterService {
                     }
                 });
 
+            // Delete the marker file
+            Files.deleteIfExists(markerFile);
             log.info("GeyserModelEnginePackGenerator cleanup completed");
 
         } catch (IOException e) {
@@ -1076,7 +1109,7 @@ public class UpdaterService {
     }
 
     /**
-     * Simulate a GeyserModelEnginePackGenerator update by executing cleanup immediately
+     * Simulate a GeyserModelEnginePackGenerator update by creating cleanup marker
      * This is used for testing purposes via the packtest command
      */
     public boolean simulateGMEPGUpdate(Platform platform, Path pluginsDir) {
@@ -1114,12 +1147,12 @@ public class UpdaterService {
                 return false;
             }
 
-            // Execute cleanup immediately
-            executeGMEPGCleanup(extensionsFolder);
-            log.info("GeyserModelEnginePackGenerator cleanup test completed successfully");
+            // Create cleanup marker - cleanup will happen on shutdown
+            createCleanupMarker(extensionsFolder);
+            log.info("Created cleanup marker - cleanup will execute on server shutdown");
             return true;
         } catch (Exception e) {
-            log.warn("Failed to execute cleanup test: " + e.getMessage());
+            log.warn("Failed to create cleanup marker: " + e.getMessage());
             return false;
         }
     }

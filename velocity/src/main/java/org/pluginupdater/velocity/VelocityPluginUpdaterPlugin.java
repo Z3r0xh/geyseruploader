@@ -89,6 +89,14 @@ public class VelocityPluginUpdaterPlugin {
         }
     }
 
+    @Subscribe
+    public void onProxyShutdown(com.velocitypowered.api.event.proxy.ProxyShutdownEvent event) {
+        // Execute cleanup on shutdown if marker exists
+        Path pluginsDir = dataDir.getParent();
+        UpdaterService cleanupService = new UpdaterService(new VelocityLogger(), cfg);
+        cleanupService.executeCleanupOnShutdown(Platform.VELOCITY, pluginsDir);
+    }
+
     private void runAsyncCheck(boolean manual, CommandSource sender) {
         proxy.getScheduler().buildTask(this, () -> {
             UpdaterService service = new UpdaterService(new VelocityLogger(), cfg);

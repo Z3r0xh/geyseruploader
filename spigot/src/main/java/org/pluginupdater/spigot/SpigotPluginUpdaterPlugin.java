@@ -58,6 +58,14 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
         }
     }
 
+    @Override
+    public void onDisable() {
+        // Execute cleanup on shutdown if marker exists
+        Path pluginsDir = getDataFolder().toPath().getParent();
+        UpdaterService cleanupService = new UpdaterService(new SpigotLogger(), cfg);
+        cleanupService.executeCleanupOnShutdown(Platform.SPIGOT, pluginsDir);
+    }
+
     private void saveDefaultConfigFile() {
         if (!getDataFolder().exists()) {
             getDataFolder().mkdirs();

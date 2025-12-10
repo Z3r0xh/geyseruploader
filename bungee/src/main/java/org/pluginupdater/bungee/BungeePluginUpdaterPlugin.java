@@ -58,6 +58,14 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
         }
     }
 
+    @Override
+    public void onDisable() {
+        // Execute cleanup on shutdown if marker exists
+        Path pluginsDir = getDataFolder().toPath().getParent();
+        UpdaterService cleanupService = new UpdaterService(new BungeeLogger(), cfg);
+        cleanupService.executeCleanupOnShutdown(Platform.BUNGEECORD, pluginsDir);
+    }
+
     private void runAsyncCheck(boolean manual, CommandSender sender) {
         ProxyServer.getInstance().getScheduler().runAsync(this, () -> {
             UpdaterService service = new UpdaterService(new BungeeLogger(), cfg);
