@@ -60,7 +60,7 @@ public class VelocityPluginUpdaterPlugin {
 
         // Register command
         proxy.getCommandManager().register(
-                proxy.getCommandManager().metaBuilder("pluginupdate-velocity").build(),
+                proxy.getCommandManager().metaBuilder("zpluginupdate-velocity").build(),
                 new UpdateCommand()
         );
 
@@ -188,7 +188,7 @@ public class VelocityPluginUpdaterPlugin {
         @Override
         public void execute(Invocation invocation) {
             CommandSource src = invocation.source();
-            if (!src.hasPermission("pluginupdater.command")) {
+            if (!src.hasPermission("zpluginupdater.command")) {
                 send(src, cfg.messages.prefix + cfg.messages.noPermission);
                 return;
             }
@@ -197,7 +197,7 @@ public class VelocityPluginUpdaterPlugin {
             String[] args = invocation.arguments();
             if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("reload")) {
-                    if (!src.hasPermission("pluginupdater.command.reload")) {
+                    if (!src.hasPermission("zpluginupdater.command.reload")) {
                         send(src, cfg.messages.prefix + cfg.messages.noPermission);
                         return;
                     }
@@ -209,14 +209,14 @@ public class VelocityPluginUpdaterPlugin {
                     }
                     return;
                 } else if (args[0].equalsIgnoreCase("check")) {
-                    if (!src.hasPermission("pluginupdater.command.check")) {
+                    if (!src.hasPermission("zpluginupdater.command.check")) {
                         send(src, cfg.messages.prefix + cfg.messages.noPermission);
                         return;
                     }
                     runVersionCheck(src);
                     return;
                 } else if (args[0].equalsIgnoreCase("packtest")) {
-                    if (!src.hasPermission("pluginupdater.command.packtest")) {
+                    if (!src.hasPermission("zpluginupdater.command.packtest")) {
                         send(src, cfg.messages.prefix + cfg.messages.noPermission);
                         return;
                     }
@@ -235,7 +235,7 @@ public class VelocityPluginUpdaterPlugin {
             }
 
             // Default: run update (requires update permission)
-            if (!src.hasPermission("pluginupdater.command.update")) {
+            if (!src.hasPermission("zpluginupdater.command.update")) {
                 send(src, cfg.messages.prefix + cfg.messages.noPermission);
                 return;
             }
@@ -244,7 +244,7 @@ public class VelocityPluginUpdaterPlugin {
 
         @Override
         public List<String> suggest(Invocation invocation) {
-            if (!invocation.source().hasPermission("pluginupdater.command")) {
+            if (!invocation.source().hasPermission("zpluginupdater.command")) {
                 return List.of();
             }
 
@@ -265,7 +265,7 @@ public class VelocityPluginUpdaterPlugin {
 
         @Override
         public boolean hasPermission(Invocation invocation) {
-            return invocation.source().hasPermission("pluginupdater.command");
+            return invocation.source().hasPermission("zpluginupdater.command");
         }
     }
 

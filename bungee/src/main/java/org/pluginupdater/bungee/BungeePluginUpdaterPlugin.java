@@ -156,12 +156,12 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
 
     private class UpdateCommand extends Command implements net.md_5.bungee.api.plugin.TabExecutor {
         public UpdateCommand() {
-            super("pluginupdate-bungee", "pluginupdater.admin", new String[0]);
+            super("zpluginupdate-bungee", "zpluginupdater.command", new String[0]);
         }
 
         @Override
         public void execute(CommandSender sender, String[] args) {
-            if (!sender.hasPermission("pluginupdater.command")) {
+            if (!sender.hasPermission("zpluginupdater.command")) {
                 sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
                 return;
             }
@@ -169,7 +169,7 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
             // Check for subcommands
             if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("reload")) {
-                    if (!sender.hasPermission("pluginupdater.command.reload")) {
+                    if (!sender.hasPermission("zpluginupdater.command.reload")) {
                         sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
                         return;
                     }
@@ -181,14 +181,14 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
                     }
                     return;
                 } else if (args[0].equalsIgnoreCase("check")) {
-                    if (!sender.hasPermission("pluginupdater.command.check")) {
+                    if (!sender.hasPermission("zpluginupdater.command.check")) {
                         sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
                         return;
                     }
                     runVersionCheck(sender);
                     return;
                 } else if (args[0].equalsIgnoreCase("packtest")) {
-                    if (!sender.hasPermission("pluginupdater.command.packtest")) {
+                    if (!sender.hasPermission("zpluginupdater.command.packtest")) {
                         sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
                         return;
                     }
@@ -207,7 +207,7 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
             }
 
             // Default: run update (requires update permission)
-            if (!sender.hasPermission("pluginupdater.command.update")) {
+            if (!sender.hasPermission("zpluginupdater.command.update")) {
                 sender.sendMessage(new TextComponent(cfg.messages.prefix + cfg.messages.noPermission));
                 return;
             }
@@ -216,7 +216,7 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
 
         @Override
         public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
-            if (!sender.hasPermission("pluginupdater.command")) {
+            if (!sender.hasPermission("zpluginupdater.command")) {
                 return new java.util.ArrayList<>();
             }
 
