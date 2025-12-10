@@ -1,5 +1,5 @@
-# Spanish (es) - PluginUpdater Messages
-prefix: "§a[PluginUpdater]§r "
+# Spanish (es) - zPluginUpdater Messages
+prefix: "§a[zPluginUpdater]§r "
 checking: "§7Comprobando actualizaciones..."
 upToDate: "§a{project}§r está actualizado."
 updated: "§e{project}§r ha sido actualizado a la última versión."
@@ -13,7 +13,7 @@ manualTriggered: "§7Iniciando comprobación manual de actualizaciones."
 nothingToDo: "§eNo hay objetivos válidos. Por favor revisa config.yml."
 done: "§aComprobación de actualizaciones completada."
 noPermission: "§cNo tienes permiso."
-pluginDisabled: "§c[PluginUpdater] deshabilitado por configuración"
+pluginDisabled: "§c[zPluginUpdater] deshabilitado por configuración"
 downloadFailed: "§cError en la descarga: {error}"
 hashComparisonFailed: "§eLa comparación de hash falló. Continuando con actualización por sobrescritura: {error}"
 migrationFailed: "§cError al mover {file}: {error}"

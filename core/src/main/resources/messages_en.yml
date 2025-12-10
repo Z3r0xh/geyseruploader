@@ -1,5 +1,5 @@
-# English (en) - PluginUpdater Messages
-prefix: "§a[PluginUpdater]§r "
+# English (en) - zPluginUpdater Messages
+prefix: "§a[zPluginUpdater]§r "
 checking: "§7Checking for updates..."
 upToDate: "§a{project}§r is up to date."
 updated: "§e{project}§r has been updated to the latest build."
@@ -13,7 +13,7 @@ manualTriggered: "§7Starting manual update check."
 nothingToDo: "§eNo valid targets. Please check config.yml."
 done: "§aUpdate check completed."
 noPermission: "§cYou do not have permission."
-pluginDisabled: "§c[PluginUpdater] disabled by config"
+pluginDisabled: "§c[zPluginUpdater] disabled by config"
 downloadFailed: "§cDownload failed: {error}"
 hashComparisonFailed: "§eHash comparison failed. Continuing with overwrite update: {error}"
 migrationFailed: "§cFailed to move {file}: {error}"
@@ -26,7 +26,7 @@ geyserModelEngineCleanupFailed: "§cFailed to create cleanup marker. Make sure G
 
 # Version check messages
 versionCheckHeader: "§e§l═══════════════════════════════════"
-versionCheckTitle: "§a§lPluginUpdater §7Version Check"
+versionCheckTitle: "§a§lzPluginUpdater §7Version Check"
 versionCheckFooter: "§e§l═══════════════════════════════════"
 versionCheckColumnHeaders: ""
 versionCheckSeparator: ""
