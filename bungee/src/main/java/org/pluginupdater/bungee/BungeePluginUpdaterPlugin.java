@@ -33,11 +33,6 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
         // Execute migration
         migrateNestedPluginsIfNeeded(getDataFolder().toPath().getParent());
 
-        // Execute GeyserModelEnginePackGenerator cleanup if pending
-        Path pluginsDir = getDataFolder().toPath().getParent();
-        UpdaterService cleanupService = new UpdaterService(new BungeeLogger(), cfg);
-        cleanupService.executeCleanupIfPending(Platform.BUNGEECORD, pluginsDir);
-
         getProxy().getPluginManager().registerListener(this, this);
         getProxy().getPluginManager().registerCommand(this, new UpdateCommand());
 

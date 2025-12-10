@@ -395,9 +395,9 @@ public class UpdaterService {
             // Move atomically
             FileUtils.atomicMove(tmp, dest);
 
-            // If this is GeyserModelEnginePackGenerator and cleanOnUpdate is enabled, create cleanup marker
+            // If this is GeyserModelEnginePackGenerator and cleanOnUpdate is enabled, clean immediately
             if (project == Project.GEYSERMODELENGINE_EXTENSION && cfg.targets.geyserExtensions.geyserModelEnginePackGenerator.cleanOnUpdate) {
-                createCleanupMarker(targetDir, platform);
+                executeGMEPGCleanup(targetDir);
             }
 
             return new UpdateOutcome(project, true, false, Optional.empty());
@@ -1033,26 +1033,50 @@ public class UpdaterService {
         return extensionsFolder;
     }
 
-    private void createCleanupMarker(Path extensionsFolder, Platform platform) {
+    /**
+     * Execute immediate cleanup of GeyserModelEnginePackGenerator folder
+     * Deletes all files except input/ folder and .jar files
+     */
+    private void executeGMEPGCleanup(Path extensionsFolder) {
         try {
-            // Get the GeyserModelEnginePackGenerator folder path
             Path gmepgFolder = getGMEPGFolder(extensionsFolder);
             if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
-                log.warn("Cannot create cleanup marker: GeyserModelEnginePackGenerator folder not found");
+                log.warn("Cannot clean: GeyserModelEnginePackGenerator folder not found");
                 return;
             }
 
-            // Create the cleanup marker file
-            Path markerFile = gmepgFolder.resolve(".cleanup-pending");
-            Files.createFile(markerFile);
-            log.info("Created cleanup marker for GeyserModelEnginePackGenerator - cleanup will execute on next restart");
+            log.info("Cleaning GeyserModelEnginePackGenerator folder...");
+
+            // Delete all files and folders except input/ and .jar files
+            Files.list(gmepgFolder)
+                .filter(path -> {
+                    String name = path.getFileName().toString();
+                    // Keep .jar files and input/ folder
+                    return !name.endsWith(".jar") && !name.equals("input");
+                })
+                .forEach(path -> {
+                    try {
+                        if (Files.isDirectory(path)) {
+                            deleteDirectoryRecursively(path);
+                            log.info("Deleted folder: " + path.getFileName());
+                        } else {
+                            Files.delete(path);
+                            log.info("Deleted file: " + path.getFileName());
+                        }
+                    } catch (IOException e) {
+                        log.warn("Failed to delete " + path + ": " + e.getMessage());
+                    }
+                });
+
+            log.info("GeyserModelEnginePackGenerator cleanup completed");
+
         } catch (IOException e) {
-            log.warn("Failed to create cleanup marker: " + e.getMessage());
+            log.warn("Error during GeyserModelEnginePackGenerator cleanup: " + e.getMessage());
         }
     }
 
     /**
-     * Simulate a GeyserModelEnginePackGenerator update by creating the cleanup marker
+     * Simulate a GeyserModelEnginePackGenerator update by executing cleanup immediately
      * This is used for testing purposes via the packtest command
      */
     public boolean simulateGMEPGUpdate(Platform platform, Path pluginsDir) {
@@ -1090,74 +1114,16 @@ public class UpdaterService {
                 return false;
             }
 
-            // Create the cleanup marker
-            Path markerFile = gmepgFolder.resolve(".cleanup-pending");
-            if (Files.exists(markerFile)) {
-                log.warn("Cleanup marker already exists");
-                return false; // Already exists
-            }
-
-            Files.createFile(markerFile);
-            log.info("Created cleanup marker for GeyserModelEnginePackGenerator - cleanup will execute on next restart");
+            // Execute cleanup immediately
+            executeGMEPGCleanup(extensionsFolder);
+            log.info("GeyserModelEnginePackGenerator cleanup test completed successfully");
             return true;
-        } catch (IOException e) {
-            log.warn("Failed to create cleanup marker: " + e.getMessage());
+        } catch (Exception e) {
+            log.warn("Failed to execute cleanup test: " + e.getMessage());
             return false;
         }
     }
 
-    /**
-     * Execute cleanup for GeyserModelEnginePackGenerator if marker exists
-     * This should be called on server startup before extensions are loaded
-     */
-    public void executeCleanupIfPending(Platform platform, Path pluginsDir) {
-        try {
-            Path extensionsFolder = findGeyserExtensionsFolder(platform, pluginsDir);
-            if (extensionsFolder == null) {
-                return;
-            }
-
-            Path gmepgFolder = getGMEPGFolder(extensionsFolder);
-            if (gmepgFolder == null || !Files.exists(gmepgFolder)) {
-                return;
-            }
-
-            Path markerFile = gmepgFolder.resolve(".cleanup-pending");
-            if (!Files.exists(markerFile)) {
-                return; // No cleanup pending
-            }
-
-            log.info("Cleanup marker detected, cleaning GeyserModelEnginePackGenerator folder...");
-
-            // Delete all files and folders except input/ and .jar files
-            Files.list(gmepgFolder)
-                .filter(path -> {
-                    String name = path.getFileName().toString();
-                    // Keep .jar files, .cleanup-pending marker (will be deleted at the end), and input/ folder
-                    return !name.endsWith(".jar") && !name.equals(".cleanup-pending") && !name.equals("input");
-                })
-                .forEach(path -> {
-                    try {
-                        if (Files.isDirectory(path)) {
-                            deleteDirectoryRecursively(path);
-                            log.info("Deleted folder: " + path.getFileName());
-                        } else {
-                            Files.delete(path);
-                            log.info("Deleted file: " + path.getFileName());
-                        }
-                    } catch (IOException e) {
-                        log.warn("Failed to delete " + path + ": " + e.getMessage());
-                    }
-                });
-
-            // Delete the marker file
-            Files.deleteIfExists(markerFile);
-            log.info("GeyserModelEnginePackGenerator cleanup completed");
-
-        } catch (IOException e) {
-            log.warn("Error during GeyserModelEnginePackGenerator cleanup: " + e.getMessage());
-        }
-    }
 
     private Path getGMEPGFolder(Path extensionsFolder) {
         // Try different possible folder names

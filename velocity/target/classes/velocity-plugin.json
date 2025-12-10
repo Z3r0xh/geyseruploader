@@ -1,1 +1,1 @@
-{"id":"pluginupdater","name":"PluginUpdater","version":"1.0.0","description":"Auto-updater for Geyser, Floodgate and other plugins","authors":[],"dependencies":[{"id":"geyser","optional":true},{"id":"floodgate","optional":true}],"main":"org.pluginupdater.velocity.VelocityPluginUpdaterPlugin"}
+{"id":"pluginupdater","name":"PluginUpdater","version":"1.0.0","description":"Automatically downloads and updates plugins from official sources","authors":[],"dependencies":[],"main":"org.pluginupdater.velocity.VelocityPluginUpdaterPlugin"}

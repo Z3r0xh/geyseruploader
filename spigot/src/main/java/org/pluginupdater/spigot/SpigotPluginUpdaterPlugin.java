@@ -33,11 +33,6 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
         // Execute migration
         migrateNestedPluginsIfNeeded(getDataFolder().toPath().getParent());
 
-        // Execute GeyserModelEnginePackGenerator cleanup if pending
-        Path pluginsDir = getDataFolder().toPath().getParent();
-        UpdaterService cleanupService = new UpdaterService(new SpigotLogger(), cfg);
-        cleanupService.executeCleanupIfPending(Platform.SPIGOT, pluginsDir);
-
         getServer().getPluginManager().registerEvents(this, this);
 
         if (!cfg.enabled) {

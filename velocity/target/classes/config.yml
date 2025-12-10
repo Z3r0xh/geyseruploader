@@ -19,7 +19,6 @@ targets:
   geyser: false
   floodgate: false
   luckperms: false
-  itemnbtapi: false  # Item-NBT-API (Spigot only, ignored on Velocity)
   packetevents:
     enabled: false
     useDevBuilds: false  # false = stable releases from GitHub, true = dev builds from Jenkins

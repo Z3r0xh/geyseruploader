@@ -58,11 +58,6 @@ public class VelocityPluginUpdaterPlugin {
         // Execute migration
         migrateNestedPluginsIfNeeded(dataDir.getParent());
 
-        // Execute GeyserModelEnginePackGenerator cleanup if pending
-        Path pluginsDir = dataDir.getParent();
-        UpdaterService cleanupService = new UpdaterService(new VelocityLogger(), cfg);
-        cleanupService.executeCleanupIfPending(Platform.VELOCITY, pluginsDir);
-
         // Register command
         proxy.getCommandManager().register(
                 proxy.getCommandManager().metaBuilder("pluginupdate-velocity").build(),
