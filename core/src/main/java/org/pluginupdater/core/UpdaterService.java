@@ -106,6 +106,11 @@ public class UpdaterService {
             return VersionInfo.disabled(project);
         }
 
+        // Special validation: Geyser extensions require Geyser to be installed
+        if (project.isGeyserExtension() && !cfg.targets.geyser) {
+            return VersionInfo.error(project, "Requires Geyser to be enabled in config");
+        }
+
         try {
             // Determine search directory: extensions folder for Geyser extensions, plugins folder otherwise
             Path searchDir = pluginsDir;
@@ -116,7 +121,7 @@ public class UpdaterService {
                         searchDir = extensionsDir;
                     }
                 } catch (IOException e) {
-                    // If Geyser folder not found, searchDir remains pluginsDir (will return "not found")
+                    return VersionInfo.error(project, "Geyser folder not found. Make sure Geyser is installed.");
                 }
             }
 
@@ -162,8 +167,8 @@ public class UpdaterService {
         if (project == Project.VIABACKWARDS) return cfg.targets.viaPlugins.viaBackwards;
         if (project == Project.VIAREWIND) return cfg.targets.viaPlugins.viaRewind;
         if (project == Project.VIAREWIND_LEGACY) return cfg.targets.viaPlugins.viaRewindLegacy;
-        if (project == Project.GEYSERUTILS_EXTENSION) return cfg.targets.geyserExtensions.geyserUtils;
-        if (project == Project.GEYSERUTILS_PLUGIN) return cfg.targets.geyserExtensions.geyserUtils;
+        if (project == Project.GEYSERUTILS_EXTENSION) return cfg.targets.geyserExtensions.geyserUtils.extension;
+        if (project == Project.GEYSERUTILS_PLUGIN) return cfg.targets.geyserExtensions.geyserUtils.plugin;
         if (project == Project.GEYSERMODELENGINE_EXTENSION) return cfg.targets.geyserExtensions.geyserModelEngineExtension.enabled;
         if (project == Project.GEYSERMODELENGINE_PLUGIN) return cfg.targets.geyserExtensions.geyserModelEnginePlugin;
         return false;
@@ -317,8 +322,10 @@ public class UpdaterService {
             if (cfg.targets.itemnbtapi) targets.add(Project.ITEMNBTAPI);
         }
         // Geyser extensions
-        if (cfg.targets.geyserExtensions.geyserUtils) {
+        if (cfg.targets.geyserExtensions.geyserUtils.extension) {
             targets.add(Project.GEYSERUTILS_EXTENSION);
+        }
+        if (cfg.targets.geyserExtensions.geyserUtils.plugin) {
             targets.add(Project.GEYSERUTILS_PLUGIN);
         }
         if (cfg.targets.geyserExtensions.geyserModelEngineExtension.enabled) {
@@ -334,6 +341,12 @@ public class UpdaterService {
     }
 
     private UpdateOutcome updateOne(Project project, Platform platform, Path pluginsDir) {
+        // Special validation: Geyser extensions require Geyser to be installed
+        if (project.isGeyserExtension() && !cfg.targets.geyser) {
+            return new UpdateOutcome(project, false, false,
+                Optional.of("Requires Geyser to be enabled in config"));
+        }
+
         try {
             // For Geyser extensions, we need to work with the Geyser extensions folder
             Path targetDir = project.isGeyserExtension() ? findGeyserExtensionsFolder(platform, pluginsDir) : pluginsDir;

@@ -1,4 +1,4 @@
-configVersion: 2
+configVersion: 3
 enabled: true
 # Language file to use (en, es, ja, de, fr, zh)
 # Available languages: English (en), Spanish (es), Japanese (ja), German (de), French (fr), Chinese (zh)
@@ -23,7 +23,9 @@ targets:
     enabled: false
     useDevBuilds: false  # false = stable releases from GitHub, true = dev builds from Jenkins
   geyserExtensions:
-    geyserUtils: false  # Downloads extension + plugin for all platforms
+    geyserUtils:
+      extension: false  # Downloads GeyserUtils extension (requires Geyser installed)
+      plugin: false  # Downloads GeyserUtils plugin (works standalone, all platforms)
     geyserModelEngineExtension:
       enabled: false  # Downloads GeyserModelEngineExtension (all platforms)
       cleanOnUpdate: true  # Clean extension folder on update (preserves input/ folder)

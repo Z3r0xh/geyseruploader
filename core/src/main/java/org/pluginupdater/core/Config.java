@@ -1,7 +1,7 @@
 package org.pluginupdater.core;
 
 public class Config {
-    public static final int CURRENT_CONFIG_VERSION = 2;
+    public static final int CURRENT_CONFIG_VERSION = 3;
 
     public int configVersion = CURRENT_CONFIG_VERSION;
 
@@ -59,9 +59,14 @@ public class Config {
     }
 
     public static class GeyserExtensionsConfig {
-        public boolean geyserUtils = false;  // Default false, opt-in (downloads both extension + plugin)
+        public GeyserUtilsConfig geyserUtils = new GeyserUtilsConfig();
         public GeyserModelEngineExtensionConfig geyserModelEngineExtension = new GeyserModelEngineExtensionConfig();
         public boolean geyserModelEnginePlugin = false;  // Default false, opt-in (downloads plugin for Spigot only)
+    }
+
+    public static class GeyserUtilsConfig {
+        public boolean extension = false;  // Default false, opt-in (requires Geyser - downloads extension to Geyser/extensions/)
+        public boolean plugin = false;  // Default false, opt-in (downloads plugin - works on all platforms)
     }
 
     public static class GeyserModelEngineExtensionConfig {

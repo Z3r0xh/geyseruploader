@@ -108,7 +108,22 @@ public class ConfigManager {
 
             // geyserExtensions nested config
             Map<String, Object> geyserExtensions = asMap(targets, "geyserExtensions");
-            cfg.targets.geyserExtensions.geyserUtils = asBool(geyserExtensions, "geyserUtils", cfg.targets.geyserExtensions.geyserUtils);
+
+            // geyserUtils can be boolean (old format) or object (new format)
+            Object geyserUtils = geyserExtensions.get("geyserUtils");
+            if (geyserUtils instanceof Boolean) {
+                // Legacy boolean format - enable both extension and plugin
+                boolean enabled = (Boolean) geyserUtils;
+                cfg.targets.geyserExtensions.geyserUtils.extension = enabled;
+                cfg.targets.geyserExtensions.geyserUtils.plugin = enabled;
+            } else if (geyserUtils instanceof Map) {
+                // New object format
+                Map<String, Object> geyserUtilsMap = (Map<String, Object>) geyserUtils;
+                cfg.targets.geyserExtensions.geyserUtils.extension =
+                    asBool(geyserUtilsMap, "extension", cfg.targets.geyserExtensions.geyserUtils.extension);
+                cfg.targets.geyserExtensions.geyserUtils.plugin =
+                    asBool(geyserUtilsMap, "plugin", cfg.targets.geyserExtensions.geyserUtils.plugin);
+            }
 
             // geyserModelEngineExtension can be boolean (old name: geyserModelEnginePackGenerator) or object
             Object gmepg = geyserExtensions.get("geyserModelEngineExtension");
@@ -314,8 +329,16 @@ public class ConfigManager {
             cfg.configVersion = 2;
         }
 
+        // Version 2 -> 3: Split geyserUtils into separate extension and plugin options
+        if (fromVersion < 3) {
+            // The geyserUtils migration is already handled in the main load logic
+            // (boolean -> object conversion)
+            // Just update the version
+            cfg.configVersion = 3;
+        }
+
         // Future migrations would go here
-        // if (fromVersion < 3) { ... }
+        // if (fromVersion < 4) { ... }
     }
 
     /**
@@ -349,6 +372,18 @@ public class ConfigManager {
                 existingContent += "  webhookUrl: \"\"  # Your Discord webhook URL here (e.g., https://discord.com/api/webhooks/...)\n";
                 existingContent += "  notifyOnUpdate: true  # Send notification when plugins are updated\n";
                 existingContent += "  notifyOnError: false  # Send notification when update fails\n";
+            }
+
+            // Migrate geyserUtils from boolean to object format (version 2 -> 3)
+            if (cfg.configVersion >= 3 && existingContent.contains("geyserUtils: ")) {
+                // Check if it's in old boolean format
+                if (existingContent.matches("(?s).*geyserUtils:\\s*(true|false).*")) {
+                    // Replace boolean format with object format
+                    existingContent = existingContent.replaceFirst(
+                        "geyserUtils:\\s*(true|false)\\s*#[^\\n]*",
+                        "geyserUtils:\n      extension: $1  # Downloads GeyserUtils extension (requires Geyser installed)\n      plugin: $1  # Downloads GeyserUtils plugin (works standalone, all platforms)"
+                    );
+                }
             }
 
             Files.writeString(configPath, existingContent, StandardCharsets.UTF_8);
