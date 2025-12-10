@@ -947,25 +947,45 @@ public class UpdaterService {
     }
 
     private String extractItemNBTAPIAsset(String json) throws IOException {
-        // Parse releases array to find first one with assets containing "item-nbt-api-plugin-*.jar"
-        String searchPattern = "\"browser_download_url\":\"";
-        int startPos = 0;
+        // Parse releases array to find first (latest) release with "item-nbt-api-plugin-*.jar" asset
+        // GitHub returns releases in descending order (newest first)
 
-        while ((startPos = json.indexOf(searchPattern, startPos)) != -1) {
-            int urlStart = startPos + searchPattern.length();
-            int urlEnd = json.indexOf("\"", urlStart);
-            if (urlEnd == -1) break;
+        // Split by releases (each release starts with "tag_name")
+        String[] releaseParts = json.split("\"tag_name\"");
 
-            String url = json.substring(urlStart, urlEnd);
-            // Check if this is the plugin JAR we want
-            if (url.contains("item-nbt-api-plugin-") && url.endsWith(".jar")) {
-                return url;
+        for (int i = 1; i < releaseParts.length; i++) {
+            String releasePart = releaseParts[i];
+
+            // Check if this release has assets
+            if (!releasePart.contains("\"assets\"")) continue;
+
+            // Find the assets section for this release
+            int assetsStart = releasePart.indexOf("\"assets\"");
+            int nextReleaseOrEnd = releasePart.length();
+            String assetsSection = releasePart.substring(assetsStart, nextReleaseOrEnd);
+
+            // Look for browser_download_url in this release's assets
+            String searchPattern = "\"browser_download_url\":\"";
+            int urlPos = assetsSection.indexOf(searchPattern);
+
+            while (urlPos != -1) {
+                int urlStart = urlPos + searchPattern.length();
+                int urlEnd = assetsSection.indexOf("\"", urlStart);
+                if (urlEnd == -1) break;
+
+                String url = assetsSection.substring(urlStart, urlEnd);
+
+                // Check if this is the plugin JAR we want
+                if (url.contains("item-nbt-api-plugin-") && url.endsWith(".jar")) {
+                    return url;
+                }
+
+                // Continue searching in this release
+                urlPos = assetsSection.indexOf(searchPattern, urlEnd);
             }
-
-            startPos = urlEnd;
         }
 
-        throw new IOException("Could not find ItemNBTAPI plugin JAR in releases");
+        throw new IOException("Could not find ItemNBTAPI plugin JAR in any release with assets");
     }
 
     private Path findGeyserExtensionsFolder(Platform platform, Path pluginsDir) throws IOException {
