@@ -3,7 +3,7 @@ main: org.pluginupdater.spigot.SpigotPluginUpdaterPlugin
 version: 1.0.0
 api-version: 1.19
 load: STARTUP
-description: Auto-updater for Geyser, Floodgate and other plugins
+description: Automatically downloads and updates plugins from official sources
 authors: [neha, Z3r0xh]
 softdepend: [Geyser-Spigot, floodgate, ProtocolLib, ViaVersion, ViaBackwards, ViaRewind]
 commands:
