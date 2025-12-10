@@ -56,12 +56,20 @@ public class UpdaterService {
         public final boolean updated;
         public final boolean skippedNoChange;
         public final Optional<String> error;
+        public final String oldVersion;  // Previous version (null if not installed)
+        public final String newVersion;  // New version downloaded (null if error/skipped)
 
         public UpdateOutcome(Project project, boolean updated, boolean skippedNoChange, Optional<String> error) {
+            this(project, updated, skippedNoChange, error, null, null);
+        }
+
+        public UpdateOutcome(Project project, boolean updated, boolean skippedNoChange, Optional<String> error, String oldVersion, String newVersion) {
             this.project = project;
             this.updated = updated;
             this.skippedNoChange = skippedNoChange;
             this.error = error;
+            this.oldVersion = oldVersion;
+            this.newVersion = newVersion;
         }
     }
 
@@ -357,6 +365,7 @@ public class UpdaterService {
             }
 
             Path existing = findExistingJar(project, targetDir);
+            String oldVersion = existing != null ? existing.getFileName().toString() : null;
             String downloadUrl = buildDownloadUrl(project, platform);
 
             Path tmp = Files.createTempFile("geyserupdater-" + project.apiName(), ".jar");
@@ -485,7 +494,8 @@ public class UpdaterService {
                 createCleanupMarker(targetDir);
             }
 
-            return new UpdateOutcome(project, true, false, Optional.empty());
+            String newVersion = dest.getFileName().toString();
+            return new UpdateOutcome(project, true, false, Optional.empty(), oldVersion, newVersion);
         } catch (Exception ex) {
             return new UpdateOutcome(project, false, false, Optional.of(ex.getMessage()));
         }

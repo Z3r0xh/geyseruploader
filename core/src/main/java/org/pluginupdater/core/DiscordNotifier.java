@@ -48,8 +48,31 @@ public class DiscordNotifier {
         for (UpdaterService.UpdateOutcome result : results) {
             if (result.updated) {
                 updatedCount++;
-                if (updatedPlugins.length() > 0) updatedPlugins.append(", ");
-                updatedPlugins.append("**").append(result.project.name()).append("**");
+                if (updatedPlugins.length() > 0) updatedPlugins.append("\n");
+
+                // Build version info
+                updatedPlugins.append("• **").append(result.project.name()).append("**");
+                if (result.oldVersion != null && result.newVersion != null) {
+                    // Extract clean version from filename
+                    String oldVer = extractVersion(result.oldVersion);
+                    String newVer = extractVersion(result.newVersion);
+
+                    // Check if versions are meaningful (not just the same filename)
+                    if (!oldVer.equals(newVer)) {
+                        updatedPlugins.append(": `").append(oldVer).append("` → `").append(newVer).append("`");
+                    } else {
+                        // For Geyser/Floodgate that use static names, just show "Updated to latest"
+                        updatedPlugins.append(": Updated to latest");
+                    }
+                } else if (result.newVersion != null) {
+                    String newVer = extractVersion(result.newVersion);
+                    // Check if it's a static filename (Geyser/Floodgate)
+                    if (newVer.matches("(?i)^(Geyser|floodgate).*")) {
+                        updatedPlugins.append(": New install (latest)");
+                    } else {
+                        updatedPlugins.append(": New install `").append(newVer).append("`");
+                    }
+                }
             } else if (result.error.isPresent()) {
                 errorCount++;
                 if (errorPlugins.length() > 0) errorPlugins.append("\n");
@@ -157,6 +180,44 @@ public class DiscordNotifier {
             return str;
         }
         return str.substring(0, maxLength - 3) + "...";
+    }
+
+    /**
+     * Extract version information from filename
+     * Removes .jar extension and common prefixes
+     */
+    private String extractVersion(String filename) {
+        if (filename == null) return "Unknown";
+
+        // Remove .jar extension
+        String version = filename.replaceFirst("\\.jar$", "");
+
+        // Remove common plugin name prefixes to show just version
+        version = version.replaceFirst("^Geyser-Spigot-", "");
+        version = version.replaceFirst("^Geyser-Bungee-", "");
+        version = version.replaceFirst("^Geyser-Velocity-", "");
+        version = version.replaceFirst("^floodgate-spigot-", "");
+        version = version.replaceFirst("^floodgate-bungee-", "");
+        version = version.replaceFirst("^floodgate-velocity-", "");
+        version = version.replaceFirst("^geyserutils-geyser-", "");
+        version = version.replaceFirst("^geyserutils-spigot-", "");
+        version = version.replaceFirst("^geyserutils-bungee-", "");
+        version = version.replaceFirst("^geyserutils-velocity-", "");
+        version = version.replaceFirst("^GeyserModelEngine-Extension-", "");
+        version = version.replaceFirst("^GeyserModelEngine-Plugin-", "");
+        version = version.replaceFirst("^LuckPerms-", "");
+        version = version.replaceFirst("^packetevents-spigot-", "");
+        version = version.replaceFirst("^packetevents-bungeecord-", "");
+        version = version.replaceFirst("^packetevents-velocity-", "");
+        version = version.replaceFirst("^ProtocolLib-", "");
+        version = version.replaceFirst("^ViaVersion-", "");
+        version = version.replaceFirst("^ViaBackwards-", "");
+        version = version.replaceFirst("^ViaRewind-", "");
+        version = version.replaceFirst("^FastAsyncWorldEdit-", "");
+        version = version.replaceFirst("^PlaceholderAPI-", "");
+        version = version.replaceFirst("^NBTAPI-", "");
+
+        return version;
     }
 
     /**
