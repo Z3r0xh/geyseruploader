@@ -9,7 +9,7 @@ softdepend: [Geyser-Spigot, floodgate, ProtocolLib, ViaVersion, ViaBackwards, Vi
 commands:
   zpluginupdate-spigot:
     description: Execute plugin update check or reload config
-    usage: /zpluginupdate-spigot [reload|check|packtest]
+    usage: /zpluginupdate-spigot [reload|check|packtest|webhooktest]
     permission: zpluginupdater.command
 permissions:
   zpluginupdater.*:
@@ -21,6 +21,7 @@ permissions:
       zpluginupdater.command.check: true
       zpluginupdater.command.reload: true
       zpluginupdater.command.packtest: true
+      zpluginupdater.command.webhooktest: true
   zpluginupdater.command:
     description: Access to zPluginUpdater commands
     default: op
@@ -38,4 +39,7 @@ permissions:
     default: op
   zpluginupdater.command.packtest:
     description: Can simulate GeyserModelEngineExtension update for testing
+    default: op
+  zpluginupdater.command.webhooktest:
+    description: Can test Discord webhook configuration
     default: op

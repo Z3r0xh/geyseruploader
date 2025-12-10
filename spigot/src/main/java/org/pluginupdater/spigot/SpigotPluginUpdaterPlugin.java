@@ -237,6 +237,22 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                     }
                 });
                 return true;
+            } else if (args[0].equalsIgnoreCase("webhooktest")) {
+                if (!sender.hasPermission("zpluginupdater.command.webhooktest")) {
+                    sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
+                    return true;
+                }
+                Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                    UpdaterService service = new UpdaterService(new SpigotLogger(), cfg);
+                    sender.sendMessage(cfg.messages.prefix + "§7Sending Discord webhook test...");
+                    boolean success = service.testDiscordWebhook();
+                    if (success) {
+                        sender.sendMessage(cfg.messages.prefix + "§aDiscord webhook test sent successfully! Check your Discord channel.");
+                    } else {
+                        sender.sendMessage(cfg.messages.prefix + "§cFailed to send Discord webhook test. Check console for details.");
+                    }
+                });
+                return true;
             }
         }
 
@@ -261,6 +277,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
             if ("check".startsWith(input)) completions.add("check");
             if ("reload".startsWith(input)) completions.add("reload");
             if ("packtest".startsWith(input)) completions.add("packtest");
+            if ("webhooktest".startsWith(input)) completions.add("webhooktest");
 
             return completions;
         }
