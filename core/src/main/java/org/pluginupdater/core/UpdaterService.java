@@ -349,28 +349,36 @@ public class UpdaterService {
 
                 log.info("Comparing versions - Existing: " + existingFilename + ", Latest: " + newFilename);
 
-                // If filenames match, assume it's the same version
+                // If filenames match, compare file sizes to detect updates
                 if (existingFilename.equals(newFilename)) {
-                    Files.deleteIfExists(tmp);
-                    log.info(project.apiName() + " is already up to date (filename match)");
-                    return new UpdateOutcome(project, false, true, Optional.empty());
-                }
+                    long existingSize = Files.size(existing);
+                    long newSize = Files.size(tmp);
 
-                // Compare versions to prevent downgrade
-                int versionComparison = compareVersions(existingFilename, newFilename);
-                if (versionComparison > 0) {
-                    // Existing version is NEWER than the "latest" - prevent downgrade
-                    Files.deleteIfExists(tmp);
-                    log.warn(project.apiName() + " - Existing version (" + existingFilename + ") is newer than available version (" + newFilename + "). Skipping downgrade.");
-                    return new UpdateOutcome(project, false, true, Optional.empty());
-                } else if (versionComparison < 0) {
-                    // New version is NEWER - proceed with update
-                    log.info(project.apiName() + " has a new version available: " + newFilename);
+                    if (existingSize == newSize) {
+                        Files.deleteIfExists(tmp);
+                        log.info(project.apiName() + " is already up to date (filename and size match)");
+                        return new UpdateOutcome(project, false, true, Optional.empty());
+                    } else {
+                        log.info(project.apiName() + " has an update (same filename but different size: " + existingSize + " -> " + newSize + " bytes)");
+                        // Continue with update
+                    }
                 } else {
-                    // Versions are equal (but filenames differ slightly) - skip update
-                    Files.deleteIfExists(tmp);
-                    log.info(project.apiName() + " versions are equivalent, skipping update");
-                    return new UpdateOutcome(project, false, true, Optional.empty());
+                    // Filenames are different - compare versions to prevent downgrade
+                    int versionComparison = compareVersions(existingFilename, newFilename);
+                    if (versionComparison > 0) {
+                        // Existing version is NEWER than the "latest" - prevent downgrade
+                        Files.deleteIfExists(tmp);
+                        log.warn(project.apiName() + " - Existing version (" + existingFilename + ") is newer than available version (" + newFilename + "). Skipping downgrade.");
+                        return new UpdateOutcome(project, false, true, Optional.empty());
+                    } else if (versionComparison < 0) {
+                        // New version is NEWER - proceed with update
+                        log.info(project.apiName() + " has a new version available: " + newFilename);
+                    } else {
+                        // Versions are equal (but filenames differ slightly) - skip update
+                        Files.deleteIfExists(tmp);
+                        log.info(project.apiName() + " versions are equivalent, skipping update");
+                        return new UpdateOutcome(project, false, true, Optional.empty());
+                    }
                 }
             }
 
