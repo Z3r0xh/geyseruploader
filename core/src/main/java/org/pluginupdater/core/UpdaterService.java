@@ -303,7 +303,7 @@ public class UpdaterService {
         if (cfg.targets.geyserExtensions.geyserModelEngineExtension.enabled) {
             targets.add(Project.GEYSERMODELENGINE_EXTENSION);
         }
-        if (cfg.targets.geyserExtensions.geyserModelEngine) {
+        if (cfg.targets.geyserExtensions.geyserModelEnginePlugin) {
             // Plugin is only for Spigot
             if (platform == Platform.SPIGOT) {
                 targets.add(Project.GEYSERMODELENGINE_PLUGIN);

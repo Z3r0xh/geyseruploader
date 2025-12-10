@@ -1,7 +1,6 @@
 org\pluginupdater\core\Config$GeyserExtensionsConfig.class
 org\pluginupdater\core\Config$ViaPluginsConfig.class
 org\pluginupdater\core\Config$Targets.class
-org\pluginupdater\core\Config$GeyserModelEnginePackGeneratorConfig.class
 org\pluginupdater\core\Config$PostUpdate.class
 org\pluginupdater\core\util\FileUtils.class
 org\pluginupdater\core\ConfigManager.class
@@ -15,6 +14,7 @@ org\pluginupdater\core\UpdaterService$1.class
 org\pluginupdater\core\Config$PacketEventsConfig.class
 org\pluginupdater\core\UpdaterService.class
 org\pluginupdater\core\VersionInfo.class
+org\pluginupdater\core\Config$GeyserModelEngineExtensionConfig.class
 org\pluginupdater\core\Platform.class
 org\pluginupdater\core\Config$AdminLogin.class
 org\pluginupdater\core\UpdaterService$UpdateOutcome.class

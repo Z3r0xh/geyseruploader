@@ -28,7 +28,6 @@ targets:
     geyserModelEngineExtension:
       enabled: false  # Downloads GeyserModelEngineExtension (all platforms)
       cleanOnUpdate: true  # Clean extension folder on update (preserves input/ folder)
-    geyserModelEnginePlugin: false  # Downloads GeyserModelEngine plugin (Spigot only)
 postUpdate:
   notifyConsole: true
   notifyPlayersWithPermission: true
