@@ -15,6 +15,28 @@ periodic:
 adminLogin:
   enabled: true
   permission: geyserupdater.admin
+permissions:
+  command:
+    permission: "zpluginupdater.command"
+    defaultOp: true  # true = OP required by default, false = everyone can use
+  update:
+    permission: "zpluginupdater.command.update"
+    defaultOp: true
+  check:
+    permission: "zpluginupdater.command.check"
+    defaultOp: true
+  reload:
+    permission: "zpluginupdater.command.reload"
+    defaultOp: true
+  packtest:
+    permission: "zpluginupdater.command.packtest"
+    defaultOp: true
+  webhooktest:
+    permission: "zpluginupdater.command.webhooktest"
+    defaultOp: true
+  summary:
+    permission: "zpluginupdater.command.summary"
+    defaultOp: true
 targets:
   geyser: false
   floodgate: false

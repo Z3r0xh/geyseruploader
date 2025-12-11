@@ -27,6 +27,31 @@ public class Config {
         public String permission = "zpluginupdater.admin";
     }
 
+    public Permissions permissions = new Permissions();
+    public static class Permissions {
+        public PermissionNode command = new PermissionNode("zpluginupdater.command", true);
+        public PermissionNode update = new PermissionNode("zpluginupdater.command.update", true);
+        public PermissionNode check = new PermissionNode("zpluginupdater.command.check", true);
+        public PermissionNode reload = new PermissionNode("zpluginupdater.command.reload", true);
+        public PermissionNode packtest = new PermissionNode("zpluginupdater.command.packtest", true);
+        public PermissionNode webhooktest = new PermissionNode("zpluginupdater.command.webhooktest", true);
+        public PermissionNode summary = new PermissionNode("zpluginupdater.command.summary", true);
+    }
+
+    public static class PermissionNode {
+        public String permission;
+        public boolean defaultOp;
+
+        public PermissionNode() {
+            this("", true);
+        }
+
+        public PermissionNode(String permission, boolean defaultOp) {
+            this.permission = permission;
+            this.defaultOp = defaultOp;
+        }
+    }
+
     public Targets targets = new Targets();
     public static class Targets {
         public boolean geyser = false;  // Default false, opt-in

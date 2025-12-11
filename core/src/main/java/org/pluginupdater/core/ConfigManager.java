@@ -80,6 +80,16 @@ public class ConfigManager {
             cfg.adminLogin.enabled = asBool(adminLogin, "enabled", cfg.adminLogin.enabled);
             cfg.adminLogin.permission = asStr(adminLogin, "permission", cfg.adminLogin.permission);
 
+            // permissions
+            Map<String, Object> permissions = asMap(map, "permissions");
+            loadPermissionNode(permissions, "command", cfg.permissions.command);
+            loadPermissionNode(permissions, "update", cfg.permissions.update);
+            loadPermissionNode(permissions, "check", cfg.permissions.check);
+            loadPermissionNode(permissions, "reload", cfg.permissions.reload);
+            loadPermissionNode(permissions, "packtest", cfg.permissions.packtest);
+            loadPermissionNode(permissions, "webhooktest", cfg.permissions.webhooktest);
+            loadPermissionNode(permissions, "summary", cfg.permissions.summary);
+
             // targets
             Map<String, Object> targets = asMap(map, "targets");
             cfg.targets.geyser = asBool(targets, "geyser", cfg.targets.geyser);
@@ -207,6 +217,14 @@ public class ConfigManager {
         if (o instanceof Number n) return n.intValue();
         if (o == null) return def;
         try { return Integer.parseInt(String.valueOf(o)); } catch (Exception e) { return def; }
+    }
+
+    private static void loadPermissionNode(Map<String, Object> map, String key, Config.PermissionNode node) {
+        Object o = map.get(key);
+        if (o instanceof Map<?, ?> permMap) {
+            node.permission = asStr(permMap, "permission", node.permission);
+            node.defaultOp = asBool(permMap, "defaultOp", node.defaultOp);
+        }
     }
 
     public Path getConfigPath() {

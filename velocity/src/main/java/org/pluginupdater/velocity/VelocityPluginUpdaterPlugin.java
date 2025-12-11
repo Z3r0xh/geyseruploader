@@ -251,6 +251,22 @@ public class VelocityPluginUpdaterPlugin {
                         }
                     }).schedule();
                     return;
+                } else if (args[0].equalsIgnoreCase("summary") || args[0].equalsIgnoreCase("webhooksummary")) {
+                    if (!src.hasPermission("zpluginupdater.command.summary")) {
+                        send(src, cfg.messages.prefix + cfg.messages.noPermission);
+                        return;
+                    }
+                    proxy.getScheduler().buildTask(VelocityPluginUpdaterPlugin.this, () -> {
+                        send(src, cfg.messages.prefix + "§7Sending version summary to Discord webhook...");
+                        UpdaterService service = new UpdaterService(new VelocityLogger(), cfg);
+                        Path pluginsDir = dataDir.getParent();
+                        List<org.pluginupdater.core.VersionInfo> versions = service.checkVersions(Platform.VELOCITY, pluginsDir);
+
+                        org.pluginupdater.core.DiscordNotifier notifier = new org.pluginupdater.core.DiscordNotifier(cfg, new VelocityLogger());
+                        notifier.notifyPeriodicCheck(versions);
+                        send(src, cfg.messages.prefix + "§aVersion summary sent to Discord! Check your Discord channel.");
+                    }).schedule();
+                    return;
                 }
             }
 
@@ -277,6 +293,7 @@ public class VelocityPluginUpdaterPlugin {
                 if ("reload".startsWith(input)) completions.add("reload");
                 if ("packtest".startsWith(input)) completions.add("packtest");
                 if ("webhooktest".startsWith(input)) completions.add("webhooktest");
+                if ("summary".startsWith(input)) completions.add("summary");
 
                 return completions;
             }

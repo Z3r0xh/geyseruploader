@@ -4,6 +4,8 @@ org\pluginupdater\core\Config$Targets.class
 org\pluginupdater\core\Config$PostUpdate.class
 org\pluginupdater\core\util\FileUtils.class
 org\pluginupdater\core\ConfigManager.class
+org\pluginupdater\core\Config$PermissionNode.class
+org\pluginupdater\core\Config$Permissions.class
 org\pluginupdater\core\Config$ProtocolLibConfig.class
 org\pluginupdater\core\Config$Periodic.class
 org\pluginupdater\core\Config$Messages.class

@@ -266,6 +266,22 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                     }
                 });
                 return true;
+            } else if (args[0].equalsIgnoreCase("summary") || args[0].equalsIgnoreCase("webhooksummary")) {
+                if (!sender.hasPermission("zpluginupdater.command.summary")) {
+                    sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
+                    return true;
+                }
+                Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                    sender.sendMessage(cfg.messages.prefix + "§7Sending version summary to Discord webhook...");
+                    UpdaterService service = new UpdaterService(new SpigotLogger(), cfg);
+                    Path pluginsDir = getDataFolder().toPath().getParent();
+                    List<org.pluginupdater.core.VersionInfo> versions = service.checkVersions(Platform.SPIGOT, pluginsDir);
+
+                    org.pluginupdater.core.DiscordNotifier notifier = new org.pluginupdater.core.DiscordNotifier(cfg, new SpigotLogger());
+                    notifier.notifyPeriodicCheck(versions);
+                    sender.sendMessage(cfg.messages.prefix + "§aVersion summary sent to Discord! Check your Discord channel.");
+                });
+                return true;
             }
         }
 
@@ -291,6 +307,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
             if ("reload".startsWith(input)) completions.add("reload");
             if ("packtest".startsWith(input)) completions.add("packtest");
             if ("webhooktest".startsWith(input)) completions.add("webhooktest");
+            if ("summary".startsWith(input)) completions.add("summary");
 
             return completions;
         }
