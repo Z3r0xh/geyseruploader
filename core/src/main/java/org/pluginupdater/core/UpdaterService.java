@@ -410,6 +410,10 @@ public class UpdaterService {
                 // Determine what the new filename would be
                 if (project == Project.GEYSER || project == Project.FLOODGATE) {
                     newFilename = defaultDestination(project, platform, targetDir).getFileName().toString();
+                } else if (project == Project.THIRDPARTYCOSMETICS_EXTENSION) {
+                    newFilename = "thirdpartycosmetics.jar";
+                } else if (project == Project.EMOTEOFFHAND_EXTENSION) {
+                    newFilename = "emoteoffhand.jar";
                 } else {
                     newFilename = extractFilenameFromUrl(downloadUrl);
                 }
