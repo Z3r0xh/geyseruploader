@@ -400,16 +400,17 @@ public class UpdaterService {
                     long existingSize = Files.size(existing);
                     long newSize = Files.size(tmp);
 
-                    // Special case: SNAPSHOT versions should always update if from GitHub releases
-                    // because they can change without changing version number
-                    boolean isSnapshot = normalizedNew.toLowerCase().contains("-snapshot");
+                    // Special case: SNAPSHOT versions and GitHub releases should check timestamps
+                    // because they can change without changing version number or file size
+                    boolean isSnapshot = normalizedNew.toLowerCase().contains("-SNAPSHOT");
                     boolean isGitHubRelease = project.isGeyserExtension() || project.isGeyserRelatedPlugin() ||
                                               project == Project.GEYSERMODELENGINE_EXTENSION ||
                                               project == Project.GEYSERMODELENGINE_PLUGIN ||
                                               project == Project.GEYSERUTILS_EXTENSION ||
                                               project == Project.GEYSERUTILS_PLUGIN;
 
-                    if (isSnapshot && isGitHubRelease) {
+                    // For GitHub releases (including extensions), always check timestamp when sizes match
+                    if ((isSnapshot || isGitHubRelease) && existingSize == newSize) {
                         // For SNAPSHOT versions from GitHub, check if we should update
                         if (newSize < 1_000_000 && existingSize > 10_000_000) {
                             // Downloaded file is suspiciously small - likely an error page or rate limit response
@@ -423,20 +424,20 @@ public class UpdaterService {
                                 Long githubPublished = getGitHubReleaseTimestamp(project);
 
                                 if (githubPublished != null && githubPublished > localModified) {
-                                    log.info(ANSI_YELLOW + project.apiName() + " SNAPSHOT has same size but GitHub release is newer - updating" + ANSI_RESET);
+                                    log.info(ANSI_YELLOW + project.apiName() + " has same size but GitHub release is newer - updating" + ANSI_RESET);
                                     // Continue with update
                                 } else {
                                     Files.deleteIfExists(tmp);
-                                    log.info(ANSI_GREEN + project.apiName() + " is a SNAPSHOT build and local file is up to date" + ANSI_RESET);
+                                    log.info(ANSI_GREEN + project.apiName() + " is up to date (verified by GitHub timestamp)" + ANSI_RESET);
                                     return new UpdateOutcome(project, false, true, Optional.empty());
                                 }
                             } catch (Exception e) {
                                 // If we can't get timestamp, skip update to be safe
                                 Files.deleteIfExists(tmp);
-                                log.info(ANSI_YELLOW + project.apiName() + " is a SNAPSHOT build with matching size - skipping update (could not verify timestamp)" + ANSI_RESET);
+                                log.info(ANSI_YELLOW + project.apiName() + " has matching size - skipping update (could not verify timestamp)" + ANSI_RESET);
                                 return new UpdateOutcome(project, false, true, Optional.empty());
                             }
-                        } else {
+                        } else if (isSnapshot) {
                             log.info(ANSI_YELLOW + project.apiName() + " SNAPSHOT has different size: " + existingSize + " -> " + newSize + " bytes - updating" + ANSI_RESET);
                             // Continue with update
                         }
