@@ -297,12 +297,20 @@ public class VelocityPluginUpdaterPlugin {
 
     private void msg(CommandSource sender, String msg) {
         if (sender != null) send(sender, cfg.messages.prefix + msg);
-        else logger.info(msg);
+        else logger.info(stripMinecraftColors(msg));
     }
 
     private void send(CommandSource sender, String msg) {
         if (sender != null) sender.sendMessage(Component.text(msg));
-        else logger.info(msg);
+        else logger.info(stripMinecraftColors(msg));
+    }
+
+    /**
+     * Remove Minecraft color codes (§x) from string for console display
+     */
+    private String stripMinecraftColors(String text) {
+        if (text == null) return null;
+        return text.replaceAll("§[0-9a-fk-or]", "");
     }
 
     private void migrateNestedPluginsIfNeeded(Path correctPluginsDir) {

@@ -178,7 +178,16 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
     }
 
     private void info(String m) {
-        getLogger().info(m);
+        // Remove Minecraft color codes for console display
+        getLogger().info(stripMinecraftColors(m));
+    }
+
+    /**
+     * Remove Minecraft color codes (§x) from string for console display
+     */
+    private String stripMinecraftColors(String text) {
+        if (text == null) return null;
+        return text.replaceAll("§[0-9a-fk-or]", "");
     }
 
     @EventHandler

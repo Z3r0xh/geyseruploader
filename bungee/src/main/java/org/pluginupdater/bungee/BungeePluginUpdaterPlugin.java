@@ -273,9 +273,16 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
     }
 
         private void info(String msg) {
+            // Remove Minecraft color codes for console display
+            getLogger().info(stripMinecraftColors(msg));
+        }
 
-            getLogger().info(msg);
-
+        /**
+         * Remove Minecraft color codes (§x) from string for console display
+         */
+        private String stripMinecraftColors(String text) {
+            if (text == null) return null;
+            return text.replaceAll("§[0-9a-fk-or]", "");
         }
 
     
