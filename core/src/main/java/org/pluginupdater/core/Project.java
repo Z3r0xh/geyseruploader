@@ -16,6 +16,8 @@ public enum Project {
     // Geyser Extensions (go in Geyser-{Platform}/extensions/)
     GEYSERUTILS_EXTENSION("geyserutils-extension", "geyserutils-geyser"),
     GEYSERMODELENGINE_EXTENSION("geysermodelengine-extension", "GeyserModelEngineExtension"),
+    THIRDPARTYCOSMETICS_EXTENSION("thirdpartycosmetics-extension", "thirdpartycosmetics"),
+    EMOTEOFFHAND_EXTENSION("emoteoffhand-extension", "emoteoffhand"),
     // Geyser-related Plugins (go in plugins/)
     GEYSERUTILS_PLUGIN("geyserutils-plugin", "geyserutils"),
     GEYSERMODELENGINE_PLUGIN("geysermodelengine-plugin", "GeyserModelEngine");
@@ -49,7 +51,8 @@ public enum Project {
     }
 
     public boolean isGeyserExtension() {
-        return this == GEYSERUTILS_EXTENSION || this == GEYSERMODELENGINE_EXTENSION;
+        return this == GEYSERUTILS_EXTENSION || this == GEYSERMODELENGINE_EXTENSION
+            || this == THIRDPARTYCOSMETICS_EXTENSION || this == EMOTEOFFHAND_EXTENSION;
     }
 
     public boolean isGeyserRelatedPlugin() {

@@ -61,6 +61,8 @@ public class Config {
     public static class GeyserExtensionsConfig {
         public GeyserUtilsConfig geyserUtils = new GeyserUtilsConfig();
         public GeyserModelEngineExtensionConfig geyserModelEngineExtension = new GeyserModelEngineExtensionConfig();
+        public boolean thirdPartyCosmetics = false;  // Default false, opt-in (downloads ThirdPartyCosmetics extension)
+        public boolean emoteOffhand = false;  // Default false, opt-in (downloads EmoteOffhand extension)
         public boolean geyserModelEnginePlugin = false;  // Default false, opt-in (downloads plugin for Spigot only)
     }
 

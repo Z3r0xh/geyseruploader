@@ -178,6 +178,8 @@ public class UpdaterService {
         if (project == Project.GEYSERUTILS_EXTENSION) return cfg.targets.geyserExtensions.geyserUtils.extension;
         if (project == Project.GEYSERUTILS_PLUGIN) return cfg.targets.geyserExtensions.geyserUtils.plugin;
         if (project == Project.GEYSERMODELENGINE_EXTENSION) return cfg.targets.geyserExtensions.geyserModelEngineExtension.enabled;
+        if (project == Project.THIRDPARTYCOSMETICS_EXTENSION) return cfg.targets.geyserExtensions.thirdPartyCosmetics;
+        if (project == Project.EMOTEOFFHAND_EXTENSION) return cfg.targets.geyserExtensions.emoteOffhand;
         if (project == Project.GEYSERMODELENGINE_PLUGIN) return cfg.targets.geyserExtensions.geyserModelEnginePlugin;
         return false;
     }
@@ -339,6 +341,12 @@ public class UpdaterService {
         if (cfg.targets.geyserExtensions.geyserModelEngineExtension.enabled) {
             targets.add(Project.GEYSERMODELENGINE_EXTENSION);
         }
+        if (cfg.targets.geyserExtensions.thirdPartyCosmetics) {
+            targets.add(Project.THIRDPARTYCOSMETICS_EXTENSION);
+        }
+        if (cfg.targets.geyserExtensions.emoteOffhand) {
+            targets.add(Project.EMOTEOFFHAND_EXTENSION);
+        }
         if (cfg.targets.geyserExtensions.geyserModelEnginePlugin) {
             // Plugin is only for Spigot
             if (platform == Platform.SPIGOT) {
@@ -471,9 +479,10 @@ public class UpdaterService {
 
             // Determine destination
             Path dest;
-            // For Geyser/Floodgate, always use default naming since API doesn't provide filename
+            // For Geyser/Floodgate/ThirdPartyCosmetics/EmoteOffhand, always use default naming since API doesn't provide filename
             // For others, extract filename from URL to preserve version information
-            if (project == Project.GEYSER || project == Project.FLOODGATE) {
+            if (project == Project.GEYSER || project == Project.FLOODGATE
+                || project == Project.THIRDPARTYCOSMETICS_EXTENSION || project == Project.EMOTEOFFHAND_EXTENSION) {
                 dest = defaultDestination(project, platform, targetDir);
                 // If we're updating and the old file exists with a different name, delete it
                 if (existing != null && !existing.equals(dest)) {
@@ -503,7 +512,12 @@ public class UpdaterService {
     }
 
     private String buildDownloadUrl(Project project, Platform platform) throws IOException {
-        if (project.isGeyserExtension() || project.isGeyserRelatedPlugin()) {
+        // ThirdPartyCosmetics and EmoteOffhand use GeyserMC API directly (no platform suffix)
+        if (project == Project.THIRDPARTYCOSMETICS_EXTENSION) {
+            return GEYSER_BASE + "/thirdpartycosmetics/versions/latest/builds/latest/downloads/thirdpartycosmetics";
+        } else if (project == Project.EMOTEOFFHAND_EXTENSION) {
+            return GEYSER_BASE + "/emoteoffhand/versions/latest/builds/latest/downloads/emoteoffhand";
+        } else if (project.isGeyserExtension() || project.isGeyserRelatedPlugin()) {
             return getGeyserExtensionDownloadUrl(project, platform);
         } else if (project.isViaPlugin()) {
             return getViaPluginDownloadUrl(project);
@@ -1614,6 +1628,12 @@ public class UpdaterService {
                 break;
             case GEYSERMODELENGINE_EXTENSION:
                 filename = "GeyserModelEngine-Extension.jar";
+                break;
+            case THIRDPARTYCOSMETICS_EXTENSION:
+                filename = "thirdpartycosmetics.jar";
+                break;
+            case EMOTEOFFHAND_EXTENSION:
+                filename = "emoteoffhand.jar";
                 break;
             case GEYSERMODELENGINE_PLUGIN:
                 filename = "GeyserModelEngine-Plugin.jar";

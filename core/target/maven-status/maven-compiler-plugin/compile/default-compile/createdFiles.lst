@@ -9,12 +9,15 @@ org\pluginupdater\core\Config$Periodic.class
 org\pluginupdater\core\Config$Messages.class
 org\pluginupdater\core\logging\LogAdapter.class
 org\pluginupdater\core\Project.class
+org\pluginupdater\core\Config$DiscordWebhook.class
 org\pluginupdater\core\Config.class
 org\pluginupdater\core\UpdaterService$1.class
 org\pluginupdater\core\Config$PacketEventsConfig.class
+org\pluginupdater\core\DiscordNotifier.class
 org\pluginupdater\core\UpdaterService.class
 org\pluginupdater\core\VersionInfo.class
 org\pluginupdater\core\Config$GeyserModelEngineExtensionConfig.class
+org\pluginupdater\core\Config$GeyserUtilsConfig.class
 org\pluginupdater\core\Platform.class
 org\pluginupdater\core\Config$AdminLogin.class
 org\pluginupdater\core\UpdaterService$UpdateOutcome.class

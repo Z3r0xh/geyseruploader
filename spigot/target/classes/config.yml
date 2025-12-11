@@ -1,6 +1,6 @@
 # Auto-generated from core defaults on first startup,
 # but provided here so manual installation uses the same initial values
-configVersion: 1
+configVersion: 3
 enabled: true
 # Language file to use (en, es, ja, de, fr, zh)
 # Available languages: English (en), Spanish (es), Japanese (ja), German (de), French (fr), Chinese (zh)
@@ -36,13 +36,22 @@ targets:
     viaRewind: false
     viaRewindLegacy: false
   geyserExtensions:
-    geyserUtils: false  # Downloads extension + plugin for all platforms
+    geyserUtils:
+      extension: false  # Downloads GeyserUtils extension (requires Geyser installed)
+      plugin: false  # Downloads GeyserUtils plugin (works standalone, all platforms)
     geyserModelEngineExtension:
       enabled: false  # Downloads GeyserModelEngineExtension (all platforms)
       cleanOnUpdate: true  # Clean extension folder on update (preserves input/ folder)
+    thirdPartyCosmetics: false  # Downloads ThirdPartyCosmetics extension (requires Geyser installed)
+    emoteOffhand: false  # Downloads EmoteOffhand extension (requires Geyser installed)
     geyserModelEnginePlugin: false  # Downloads GeyserModelEngine plugin (Spigot only)
 postUpdate:
   notifyConsole: true
   notifyPlayersWithPermission: true
   runRestartCommand: false
   restartCommand: "restart"
+discordWebhook:
+  enabled: false  # Enable Discord webhook notifications
+  webhookUrl: ""  # Your Discord webhook URL here (e.g., https://discord.com/api/webhooks/...)
+  notifyOnUpdate: true  # Send notification when plugins are updated
+  notifyOnError: false  # Send notification when update fails

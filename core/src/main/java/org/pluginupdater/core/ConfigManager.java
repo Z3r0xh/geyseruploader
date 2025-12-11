@@ -143,6 +143,10 @@ public class ConfigManager {
                     asBool(gmepgMap, "cleanOnUpdate", cfg.targets.geyserExtensions.geyserModelEngineExtension.cleanOnUpdate);
             }
 
+            // thirdPartyCosmetics and emoteOffhand extensions
+            cfg.targets.geyserExtensions.thirdPartyCosmetics = asBool(geyserExtensions, "thirdPartyCosmetics", cfg.targets.geyserExtensions.thirdPartyCosmetics);
+            cfg.targets.geyserExtensions.emoteOffhand = asBool(geyserExtensions, "emoteOffhand", cfg.targets.geyserExtensions.emoteOffhand);
+
             // geyserModelEnginePlugin (old name: geyserModelEngine)
             cfg.targets.geyserExtensions.geyserModelEnginePlugin = asBool(geyserExtensions, "geyserModelEnginePlugin",
                 asBool(geyserExtensions, "geyserModelEngine", cfg.targets.geyserExtensions.geyserModelEnginePlugin));

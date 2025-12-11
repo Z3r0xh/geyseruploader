@@ -1,29 +1,38 @@
-name: PluginUpdater
+name: zPluginUpdater
 main: org.pluginupdater.bungee.BungeePluginUpdaterPlugin
 version: 1.0.0
 description: Automatically downloads and updates plugins from official sources
 authors: [neha, Z3r0xh]
 softDepends: [Geyser-BungeeCord, floodgate]
 commands:
-  pluginupdate-bungee:
+  zpluginupdate-bungee:
     description: Execute plugin update check or reload config
-    permission: pluginupdater.command
+    permission: zpluginupdater.command
 permissions:
-  pluginupdater.*:
-    description: Grants all PluginUpdater permissions
+  zpluginupdater.*:
+    description: Grants all zPluginUpdater permissions
     default: false
-  pluginupdater.command:
-    description: Access to PluginUpdater commands
+    children:
+      zpluginupdater.command: true
+      zpluginupdater.command.update: true
+      zpluginupdater.command.check: true
+      zpluginupdater.command.reload: true
+      zpluginupdater.command.packtest: true
+  zpluginupdater.command:
+    description: Access to zPluginUpdater commands
     default: false
-  pluginupdater.command.update:
+    children:
+      zpluginupdater.command.update: true
+      zpluginupdater.command.check: true
+  zpluginupdater.command.update:
     description: Can trigger manual plugin updates
     default: false
-  pluginupdater.command.check:
+  zpluginupdater.command.check:
     description: Can check plugin versions without updating
     default: false
-  pluginupdater.command.reload:
-    description: Can reload PluginUpdater configuration
+  zpluginupdater.command.reload:
+    description: Can reload zPluginUpdater configuration
     default: false
-  pluginupdater.command.packtest:
+  zpluginupdater.command.packtest:
     description: Can simulate GeyserModelEngineExtension update for testing
     default: false

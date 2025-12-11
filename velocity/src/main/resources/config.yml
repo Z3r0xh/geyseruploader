@@ -29,6 +29,8 @@ targets:
     geyserModelEngineExtension:
       enabled: false  # Downloads GeyserModelEngineExtension (all platforms)
       cleanOnUpdate: true  # Clean extension folder on update (preserves input/ folder)
+    thirdPartyCosmetics: false  # Downloads ThirdPartyCosmetics extension (requires Geyser installed)
+    emoteOffhand: false  # Downloads EmoteOffhand extension (requires Geyser installed)
 postUpdate:
   notifyConsole: true
   notifyPlayersWithPermission: true
