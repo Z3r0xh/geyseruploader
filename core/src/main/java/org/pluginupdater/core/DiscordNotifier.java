@@ -76,10 +76,12 @@ public class DiscordNotifier {
             } else if (result.error.isPresent()) {
                 errorCount++;
                 if (errorPlugins.length() > 0) errorPlugins.append("\n");
+                // Remove Minecraft color codes from error messages
+                String cleanError = stripMinecraftColors(result.error.get());
                 errorPlugins.append("• **")
                         .append(result.project.name())
                         .append("**: ")
-                        .append(truncate(result.error.get(), 100));
+                        .append(truncate(cleanError, 100));
             }
         }
 
@@ -218,6 +220,14 @@ public class DiscordNotifier {
         version = version.replaceFirst("^NBTAPI-", "");
 
         return version;
+    }
+
+    /**
+     * Remove Minecraft color codes (§x) from string for Discord display
+     */
+    private String stripMinecraftColors(String text) {
+        if (text == null) return null;
+        return text.replaceAll("§[0-9a-fk-or]", "");
     }
 
     /**
