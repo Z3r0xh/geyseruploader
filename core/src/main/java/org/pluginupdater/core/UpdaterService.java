@@ -1397,15 +1397,16 @@ public class UpdaterService {
      * Examples:
      * - "PlaceholderAPI-2.11.6.jar" -> [2, 11, 6]
      * - "item-nbt-api-plugin-2.15.0.jar" -> [2, 15, 0]
+     * - "FastAsyncWorldEdit-Paper-2.14.3-SNAPSHOT-1229.jar" -> [2, 14, 3, 1229]
      * - "Geyser-Spigot.jar" -> [] (no version)
      */
     private int[] extractVersionNumbers(String filename) {
         // Remove .jar extension
         String nameWithoutExt = filename.replace(".jar", "");
 
-        // Find version pattern: sequences of digits separated by dots
-        // Match patterns like: 1.2.3, 2.0, 10.15.3
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d+)\\.(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?");
+        // Find version pattern: sequences of digits separated by dots, optionally followed by -SNAPSHOT-buildnumber
+        // Match patterns like: 1.2.3, 2.0, 10.15.3, 2.14.3-SNAPSHOT-1229
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d+)\\.(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?(?:-SNAPSHOT-(\\d+))?");
         java.util.regex.Matcher matcher = pattern.matcher(nameWithoutExt);
 
         if (matcher.find()) {
