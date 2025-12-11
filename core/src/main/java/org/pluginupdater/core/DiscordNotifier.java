@@ -68,7 +68,7 @@ public class DiscordNotifier {
                 errorCount++;
                 emoji = "❌";
                 status = "Error";
-                versionText = "\n`" + truncate(stripMinecraftColors(info.error.get()), 80) + "`";
+                versionText = "\\n`" + truncate(stripMinecraftColors(info.error.get()), 80) + "`";
             } else if (!info.installedVersion.isPresent()) {
                 notInstalledCount++;
                 emoji = "📥";
@@ -77,12 +77,12 @@ public class DiscordNotifier {
                 updateAvailableCount++;
                 emoji = "🔄";
                 status = "Update available";
-                versionText = "\n`Current: " + extractVersion(info.installedVersion.get()) + "`";
+                versionText = "\\n`Current: " + extractVersion(info.installedVersion.get()) + "`";
             } else {
                 upToDateCount++;
                 emoji = "✅";
                 status = "Up to date";
-                versionText = "\n`Version: " + extractVersion(info.installedVersion.get()) + "`";
+                versionText = "\\n`Version: " + extractVersion(info.installedVersion.get()) + "`";
             }
 
             if (!firstField) json.append(",");
@@ -90,7 +90,7 @@ public class DiscordNotifier {
 
             json.append("{");
             json.append("\"name\": \"").append(emoji).append(" ").append(escapeJson(info.project.name())).append("\",");
-            json.append("\"value\": \"").append(escapeJson(status + versionText)).append("\",");
+            json.append("\"value\": \"").append(escapeJson(status)).append(versionText).append("\",");
             json.append("\"inline\": true");
             json.append("}");
         }
@@ -165,10 +165,12 @@ public class DiscordNotifier {
                 if (errorPlugins.length() > 0) errorPlugins.append("\n");
                 // Remove Minecraft color codes from error messages
                 String cleanError = stripMinecraftColors(result.error.get());
+                // Convert URLs in error messages to markdown links
+                String formattedError = formatErrorWithLinks(cleanError, result.project.name());
                 errorPlugins.append("• **")
                         .append(result.project.name())
                         .append("**: ")
-                        .append(truncate(cleanError, 100));
+                        .append(truncate(formattedError, 150));
             }
         }
 
@@ -314,7 +316,25 @@ public class DiscordNotifier {
      */
     private String stripMinecraftColors(String text) {
         if (text == null) return null;
-        return text.replaceAll("§[0-9a-fk-or]", "");
+        return text.replaceAll("§[0-9a-fklmnor]", "");
+    }
+
+    /**
+     * Format error messages by converting URLs to markdown links
+     * Example: "HTTP 503 when downloading https://github.com/..."
+     *       -> "HTTP 503 when downloading [Link](https://github.com/...)"
+     */
+    private String formatErrorWithLinks(String errorMessage, String projectName) {
+        if (errorMessage == null) return "";
+
+        // Pattern to match URLs (http:// or https://)
+        String urlPattern = "(https?://[^\\s)]+)";
+
+        // Replace URLs with markdown links
+        // For error messages, use a shortened link text
+        String result = errorMessage.replaceAll(urlPattern, "[Link]($1)");
+
+        return result;
     }
 
     /**

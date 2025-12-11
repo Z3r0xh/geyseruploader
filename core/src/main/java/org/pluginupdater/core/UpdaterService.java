@@ -197,7 +197,12 @@ public class UpdaterService {
     }
 
     private String getLatestVersionString(Project project, Platform platform) throws IOException {
-        if (project.isGeyserExtension() || project.isGeyserRelatedPlugin()) {
+        // ThirdPartyCosmetics and EmoteOffhand use GeyserMC API directly (no version in URL)
+        if (project == Project.THIRDPARTYCOSMETICS_EXTENSION) {
+            return "thirdpartycosmetics.jar";
+        } else if (project == Project.EMOTEOFFHAND_EXTENSION) {
+            return "emoteoffhand.jar";
+        } else if (project.isGeyserExtension() || project.isGeyserRelatedPlugin()) {
             String url = getGeyserExtensionDownloadUrl(project, platform);
             int lastSlash = url.lastIndexOf('/');
             return url.substring(lastSlash + 1);
