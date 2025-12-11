@@ -82,7 +82,7 @@ public class VelocityPluginUpdaterPlugin {
         }
         if (cfg.periodic.enabled && cfg.periodic.intervalHours > 0) {
             logger.info(cfg.messages.periodicCheck.replace("{hours}", String.valueOf(cfg.periodic.intervalHours)));
-            proxy.getScheduler().buildTask(this, () -> runAsyncCheck(false, null))
+            proxy.getScheduler().buildTask(this, () -> runAsyncCheck(false, null, true))
                     .delay(5, TimeUnit.MINUTES)
                     .repeat(cfg.periodic.intervalHours, TimeUnit.HOURS)
                     .schedule();
@@ -98,6 +98,10 @@ public class VelocityPluginUpdaterPlugin {
     }
 
     private void runAsyncCheck(boolean manual, CommandSource sender) {
+        runAsyncCheck(manual, sender, false);
+    }
+
+    private void runAsyncCheck(boolean manual, CommandSource sender, boolean isPeriodic) {
         proxy.getScheduler().buildTask(this, () -> {
             UpdaterService service = new UpdaterService(new VelocityLogger(), cfg);
             if (manual) {
@@ -106,7 +110,7 @@ public class VelocityPluginUpdaterPlugin {
                 logger.info(cfg.messages.checking);
             }
             Path pluginsDir = dataDir.getParent(); // This is directly under plugins
-            List<UpdaterService.UpdateOutcome> results = service.checkAndUpdate(Platform.VELOCITY, pluginsDir);
+            List<UpdaterService.UpdateOutcome> results = service.checkAndUpdate(Platform.VELOCITY, pluginsDir, isPeriodic);
 
             boolean anyUpdated = false;
             for (UpdaterService.UpdateOutcome r : results) {

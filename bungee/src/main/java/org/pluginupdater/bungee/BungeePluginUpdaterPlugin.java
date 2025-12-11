@@ -54,7 +54,7 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
             info(cfg.messages.periodicCheck.replace("{hours}", String.valueOf(cfg.periodic.intervalHours)));
             long initialDelay = TimeUnit.MINUTES.toSeconds(5);
             long interval = TimeUnit.HOURS.toSeconds(cfg.periodic.intervalHours);
-            getProxy().getScheduler().schedule(this, () -> runAsyncCheck(false, null), initialDelay, interval, TimeUnit.SECONDS);
+            getProxy().getScheduler().schedule(this, () -> runAsyncCheck(false, null, true), initialDelay, interval, TimeUnit.SECONDS);
         }
     }
 
@@ -67,6 +67,10 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
     }
 
     private void runAsyncCheck(boolean manual, CommandSender sender) {
+        runAsyncCheck(manual, sender, false);
+    }
+
+    private void runAsyncCheck(boolean manual, CommandSender sender, boolean isPeriodic) {
         ProxyServer.getInstance().getScheduler().runAsync(this, () -> {
             UpdaterService service = new UpdaterService(new BungeeLogger(), cfg);
             if (manual) {
@@ -75,7 +79,7 @@ public class BungeePluginUpdaterPlugin extends Plugin implements Listener {
                 info(cfg.messages.checking);
             }
             Path pluginsDir = getDataFolder().toPath().getParent(); // This is directly under plugins
-            List<UpdaterService.UpdateOutcome> results = service.checkAndUpdate(Platform.BUNGEECORD, pluginsDir);
+            List<UpdaterService.UpdateOutcome> results = service.checkAndUpdate(Platform.BUNGEECORD, pluginsDir, isPeriodic);
 
             boolean anyUpdated = false;
             for (UpdaterService.UpdateOutcome r : results) {

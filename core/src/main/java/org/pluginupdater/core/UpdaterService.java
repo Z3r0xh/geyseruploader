@@ -74,6 +74,10 @@ public class UpdaterService {
     }
 
     public List<UpdateOutcome> checkAndUpdate(Platform platform, Path pluginsDir) {
+        return checkAndUpdate(platform, pluginsDir, false);
+    }
+
+    public List<UpdateOutcome> checkAndUpdate(Platform platform, Path pluginsDir, boolean isPeriodic) {
         List<Project> targets = collectTargets(platform);
         if (targets.isEmpty()) {
             return Collections.singletonList(new UpdateOutcome(Project.GEYSER, false, false,
@@ -84,10 +88,18 @@ public class UpdaterService {
             results.add(updateOne(p, platform, pluginsDir));
         }
 
-        // Send Discord notification if enabled
+        // Send Discord notifications if enabled
         try {
             DiscordNotifier discordNotifier = new DiscordNotifier(cfg, log);
+
+            // Send update notification
             discordNotifier.notifyUpdates(results);
+
+            // Send periodic summary if this is a periodic check
+            if (isPeriodic && cfg.discordWebhook.notifyPeriodicSummary) {
+                List<VersionInfo> versions = checkVersions(platform, pluginsDir);
+                discordNotifier.notifyPeriodicCheck(versions);
+            }
         } catch (Exception e) {
             log.warn("Failed to send Discord notification: " + e.getMessage());
         }

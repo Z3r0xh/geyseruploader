@@ -27,6 +27,93 @@ public class DiscordNotifier {
     }
 
     /**
+     * Send periodic summary notification showing all plugins and their versions
+     */
+    public void notifyPeriodicCheck(List<VersionInfo> versions) {
+        if (!config.discordWebhook.enabled) {
+            return; // Discord notifications disabled
+        }
+
+        if (config.discordWebhook.webhookUrl == null || config.discordWebhook.webhookUrl.trim().isEmpty()) {
+            log.warn("Discord webhook is enabled but no webhook URL is configured");
+            return;
+        }
+
+        // Build Discord embed with fields for each plugin
+        StringBuilder json = new StringBuilder();
+        json.append("{");
+        json.append("\"embeds\": [{");
+        json.append("\"title\": \"📊 Plugin Version Summary\",");
+        json.append("\"color\": 3447003,"); // Blue
+        json.append("\"description\": \"Current plugin versions and update status\",");
+        json.append("\"fields\": [");
+
+        boolean firstField = true;
+        int upToDateCount = 0;
+        int updateAvailableCount = 0;
+        int notInstalledCount = 0;
+        int disabledCount = 0;
+        int errorCount = 0;
+
+        for (VersionInfo info : versions) {
+            String emoji;
+            String status;
+            String versionText = "";
+
+            if (!info.enabled) {
+                disabledCount++;
+                emoji = "⚫";
+                status = "Disabled";
+            } else if (info.error.isPresent()) {
+                errorCount++;
+                emoji = "❌";
+                status = "Error";
+                versionText = "\n`" + truncate(stripMinecraftColors(info.error.get()), 80) + "`";
+            } else if (!info.installedVersion.isPresent()) {
+                notInstalledCount++;
+                emoji = "📥";
+                status = "Not installed";
+            } else if (info.updateAvailable) {
+                updateAvailableCount++;
+                emoji = "🔄";
+                status = "Update available";
+                versionText = "\n`Current: " + extractVersion(info.installedVersion.get()) + "`";
+            } else {
+                upToDateCount++;
+                emoji = "✅";
+                status = "Up to date";
+                versionText = "\n`Version: " + extractVersion(info.installedVersion.get()) + "`";
+            }
+
+            if (!firstField) json.append(",");
+            firstField = false;
+
+            json.append("{");
+            json.append("\"name\": \"").append(emoji).append(" ").append(escapeJson(info.project.name())).append("\",");
+            json.append("\"value\": \"").append(escapeJson(status + versionText)).append("\",");
+            json.append("\"inline\": true");
+            json.append("}");
+        }
+
+        json.append("],");
+
+        // Add summary footer
+        json.append("\"footer\": {");
+        json.append("\"text\": \"✅ " + upToDateCount + " up-to-date | 🔄 " + updateAvailableCount + " updates | 📥 "
+                  + notInstalledCount + " not installed | ⚫ " + disabledCount + " disabled"
+                  + (errorCount > 0 ? " | ❌ " + errorCount + " errors" : "") + "\"");
+        json.append("},");
+
+        // Timestamp
+        json.append("\"timestamp\": \"").append(java.time.Instant.now().toString()).append("\"");
+
+        json.append("}]}");
+
+        // Send to Discord
+        sendToDiscord(json.toString());
+    }
+
+    /**
      * Send notification to Discord when plugins are updated
      */
     public void notifyUpdates(List<UpdaterService.UpdateOutcome> results) {

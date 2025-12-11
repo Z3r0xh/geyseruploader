@@ -54,7 +54,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
             long ticks = TimeUnit.HOURS.toSeconds(cfg.periodic.intervalHours) * 20L;
             // initial delay = 5 minutes
             long delay = TimeUnit.MINUTES.toSeconds(5) * 20L;
-            Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> runAsyncCheck(false, null), delay, ticks);
+            Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> runAsyncCheck(false, null, true), delay, ticks);
         }
     }
 
@@ -74,6 +74,10 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
     }
 
     private void runAsyncCheck(boolean manual, CommandSender sender) {
+        runAsyncCheck(manual, sender, false);
+    }
+
+    private void runAsyncCheck(boolean manual, CommandSender sender, boolean isPeriodic) {
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             UpdaterService service = new UpdaterService(new SpigotLogger(), cfg);
             if (manual) {
@@ -83,7 +87,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
             }
             Path pluginsDir = getDataFolder().toPath().getParent(); // This is directly under plugins
             List<UpdaterService.UpdateOutcome> results =
-                    service.checkAndUpdate(Platform.SPIGOT, pluginsDir);
+                    service.checkAndUpdate(Platform.SPIGOT, pluginsDir, isPeriodic);
 
             boolean anyUpdated = false;
             for (UpdaterService.UpdateOutcome r : results) {

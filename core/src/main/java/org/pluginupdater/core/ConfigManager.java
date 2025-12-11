@@ -164,6 +164,7 @@ public class ConfigManager {
             cfg.discordWebhook.webhookUrl = asStr(discordWebhook, "webhookUrl", cfg.discordWebhook.webhookUrl);
             cfg.discordWebhook.notifyOnUpdate = asBool(discordWebhook, "notifyOnUpdate", cfg.discordWebhook.notifyOnUpdate);
             cfg.discordWebhook.notifyOnError = asBool(discordWebhook, "notifyOnError", cfg.discordWebhook.notifyOnError);
+            cfg.discordWebhook.notifyPeriodicSummary = asBool(discordWebhook, "notifyPeriodicSummary", cfg.discordWebhook.notifyPeriodicSummary);
 
             // Load messages from language file
             loadMessages(cfg);

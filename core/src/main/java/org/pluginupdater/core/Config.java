@@ -90,6 +90,7 @@ public class Config {
         public String webhookUrl = "";  // Discord webhook URL (e.g., https://discord.com/api/webhooks/...)
         public boolean notifyOnUpdate = true;  // Send notification when a plugin is updated
         public boolean notifyOnError = false;  // Send notification when an update fails
+        public boolean notifyPeriodicSummary = true;  // Send summary of all plugin versions on periodic checks
     }
 
     public Messages messages = new Messages();

@@ -55,3 +55,4 @@ discordWebhook:
   webhookUrl: ""  # Your Discord webhook URL here (e.g., https://discord.com/api/webhooks/...)
   notifyOnUpdate: true  # Send notification when plugins are updated
   notifyOnError: false  # Send notification when update fails
+  notifyPeriodicSummary: true  # Send summary of all plugin versions on periodic checks
