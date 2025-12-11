@@ -191,7 +191,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
      */
     private String stripMinecraftColors(String text) {
         if (text == null) return null;
-        return text.replaceAll("§[0-9a-fk-or]", "");
+        return text.replaceAll("§[0-9a-fklmnor]", "");
     }
 
     @EventHandler
