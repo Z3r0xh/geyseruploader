@@ -199,9 +199,9 @@ public class UpdaterService {
     private String getLatestVersionString(Project project, Platform platform) throws IOException {
         // ThirdPartyCosmetics and EmoteOffhand use GeyserMC API directly (no version in URL)
         if (project == Project.THIRDPARTYCOSMETICS_EXTENSION) {
-            return "thirdpartycosmetics.jar";
+            return "ThirdPartyCosmetics.jar";
         } else if (project == Project.EMOTEOFFHAND_EXTENSION) {
-            return "emoteoffhand.jar";
+            return "EmoteOffhand.jar";
         } else if (project.isGeyserExtension() || project.isGeyserRelatedPlugin()) {
             String url = getGeyserExtensionDownloadUrl(project, platform);
             int lastSlash = url.lastIndexOf('/');
@@ -411,9 +411,9 @@ public class UpdaterService {
                 if (project == Project.GEYSER || project == Project.FLOODGATE) {
                     newFilename = defaultDestination(project, platform, targetDir).getFileName().toString();
                 } else if (project == Project.THIRDPARTYCOSMETICS_EXTENSION) {
-                    newFilename = "thirdpartycosmetics.jar";
+                    newFilename = "ThirdPartyCosmetics.jar";
                 } else if (project == Project.EMOTEOFFHAND_EXTENSION) {
-                    newFilename = "emoteoffhand.jar";
+                    newFilename = "EmoteOffhand.jar";
                 } else {
                     newFilename = extractFilenameFromUrl(downloadUrl);
                 }
@@ -1651,10 +1651,10 @@ public class UpdaterService {
                 filename = "GeyserModelEngine-Extension.jar";
                 break;
             case THIRDPARTYCOSMETICS_EXTENSION:
-                filename = "thirdpartycosmetics.jar";
+                filename = "ThirdPartyCosmetics.jar";
                 break;
             case EMOTEOFFHAND_EXTENSION:
-                filename = "emoteoffhand.jar";
+                filename = "EmoteOffhand.jar";
                 break;
             case GEYSERMODELENGINE_PLUGIN:
                 filename = "GeyserModelEngine-Plugin.jar";
