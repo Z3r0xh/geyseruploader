@@ -338,30 +338,13 @@ public class ConfigManager {
      * Migrate configuration from older versions to current version
      */
     private void migrateConfig(int fromVersion, Config cfg, Map<?, ?> originalMap) {
-        // Version 0 -> 1: Added configVersion field and geyserModelEnginePackGenerator structure
-        if (fromVersion < 1) {
-            // The geyserModelEnginePackGenerator migration is already handled in the main load logic
-            // Just update the version
-            cfg.configVersion = 1;
-        }
-
-        // Version 1 -> 2: Added Discord webhook support
-        if (fromVersion < 2) {
-            // Discord webhook configuration uses defaults (enabled=false, webhookUrl="")
-            // No migration needed, just update version
-            cfg.configVersion = 2;
-        }
-
-        // Version 2 -> 3: Split geyserUtils into separate extension and plugin options
-        if (fromVersion < 3) {
-            // The geyserUtils migration is already handled in the main load logic
-            // (boolean -> object conversion)
-            // Just update the version
-            cfg.configVersion = 3;
-        }
-
-        // Future migrations would go here
-        // if (fromVersion < 4) { ... }
+        // Current version is 1 (baseline), no migrations needed yet
+        // Future migrations would go here when we release version 2+
+        // Example:
+        // if (fromVersion < 2) {
+        //     // Migrate from version 1 to 2
+        //     cfg.configVersion = 2;
+        // }
     }
 
     /**
@@ -384,30 +367,11 @@ public class ConfigManager {
                 existingContent = "configVersion: " + cfg.configVersion + "\n" + existingContent;
             }
 
-            // Add missing sections based on config version
-            if (cfg.configVersion >= 2 && !existingContent.contains("discordWebhook:")) {
-                // Add Discord webhook section at the end
-                if (!existingContent.endsWith("\n")) {
-                    existingContent += "\n";
-                }
-                existingContent += "discordWebhook:\n";
-                existingContent += "  enabled: false  # Enable Discord webhook notifications\n";
-                existingContent += "  webhookUrl: \"\"  # Your Discord webhook URL here (e.g., https://discord.com/api/webhooks/...)\n";
-                existingContent += "  notifyOnUpdate: true  # Send notification when plugins are updated\n";
-                existingContent += "  notifyOnError: false  # Send notification when update fails\n";
-            }
-
-            // Migrate geyserUtils from boolean to object format (version 2 -> 3)
-            if (cfg.configVersion >= 3 && existingContent.contains("geyserUtils: ")) {
-                // Check if it's in old boolean format
-                if (existingContent.matches("(?s).*geyserUtils:\\s*(true|false).*")) {
-                    // Replace boolean format with object format
-                    existingContent = existingContent.replaceFirst(
-                        "geyserUtils:\\s*(true|false)\\s*#[^\\n]*",
-                        "geyserUtils:\n      extension: $1  # Downloads GeyserUtils extension (requires Geyser installed)\n      plugin: $1  # Downloads GeyserUtils plugin (works standalone, all platforms)"
-                    );
-                }
-            }
+            // Future version-specific migrations would go here
+            // Example:
+            // if (cfg.configVersion >= 2 && !existingContent.contains("newFeature:")) {
+            //     existingContent += "\nnewFeature: true\n";
+            // }
 
             Files.writeString(configPath, existingContent, StandardCharsets.UTF_8);
         } catch (IOException e) {
