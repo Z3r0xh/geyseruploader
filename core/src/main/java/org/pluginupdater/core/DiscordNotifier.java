@@ -78,11 +78,17 @@ public class DiscordNotifier {
                 emoji = "🔄";
                 status = "Update available";
                 versionText = "\\n`Current: " + extractVersion(info.installedVersion.get()) + "`";
+                if (info.buildNumber.isPresent()) {
+                    versionText += "\\n`Build: #" + info.buildNumber.get() + "`";
+                }
             } else {
                 upToDateCount++;
                 emoji = "✅";
                 status = "Up to date";
                 versionText = "\\n`Version: " + extractVersion(info.installedVersion.get()) + "`";
+                if (info.buildNumber.isPresent()) {
+                    versionText += "\\n`Build: #" + info.buildNumber.get() + "`";
+                }
             }
 
             if (!firstField) json.append(",");

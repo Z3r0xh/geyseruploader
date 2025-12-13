@@ -9,6 +9,21 @@ language: en
 # Create token at: https://github.com/settings/tokens (no scopes needed, just public access)
 # Leave empty to use unauthenticated requests
 githubToken: ""
+# Date format for displaying timestamps (Java SimpleDateFormat pattern)
+# Examples:
+#   "yyyy-MM-dd HH:mm:ss" -> 2025-12-12 16:30:45
+#   "dd/MM/yyyy HH:mm" -> 12/12/2025 16:30
+#   "MMM dd, yyyy hh:mm a" -> Dec 12, 2025 04:30 PM
+#   "yyyy-MM-dd'T'HH:mm:ss" -> 2025-12-12T16:30:45
+# See: https://docs.oracle.com/javase/8/docs/api/java/text/SimpleDateFormat.html
+dateFormat: "yyyy-MM-dd HH:mm:ss"
+# Update history logging
+updateHistory:
+  enabled: true  # Enable logging of all updates and actions to history.log
+  logChecks: false  # Log every update check (can be verbose)
+  logUpdates: true  # Log successful updates
+  logErrors: true  # Log errors during updates
+  maxFileSizeMB: 10  # Maximum log file size before rotation (in megabytes)
 checkOnStartup: true
 periodic:
   enabled: true

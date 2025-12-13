@@ -1,4 +1,6 @@
+org\pluginupdater\core\PluginInfo.class
 org\pluginupdater\core\Config$GeyserExtensionsConfig.class
+org\pluginupdater\core\PluginInfo$Builder.class
 org\pluginupdater\core\Config$ViaPluginsConfig.class
 org\pluginupdater\core\Config$Targets.class
 org\pluginupdater\core\Config$PostUpdate.class
@@ -8,9 +10,11 @@ org\pluginupdater\core\Config$PermissionNode.class
 org\pluginupdater\core\Config$Permissions.class
 org\pluginupdater\core\Config$ProtocolLibConfig.class
 org\pluginupdater\core\Config$Periodic.class
+org\pluginupdater\core\Config$UpdateHistory.class
 org\pluginupdater\core\Config$Messages.class
 org\pluginupdater\core\logging\LogAdapter.class
 org\pluginupdater\core\Project.class
+org\pluginupdater\core\UpdaterService$BuildInfo.class
 org\pluginupdater\core\Config$DiscordWebhook.class
 org\pluginupdater\core\Config.class
 org\pluginupdater\core\UpdaterService$1.class
@@ -18,6 +22,7 @@ org\pluginupdater\core\Config$PacketEventsConfig.class
 org\pluginupdater\core\DiscordNotifier.class
 org\pluginupdater\core\UpdaterService.class
 org\pluginupdater\core\VersionInfo.class
+org\pluginupdater\core\UpdateHistoryLogger.class
 org\pluginupdater\core\Config$GeyserModelEngineExtensionConfig.class
 org\pluginupdater\core\Config$GeyserUtilsConfig.class
 org\pluginupdater\core\Platform.class

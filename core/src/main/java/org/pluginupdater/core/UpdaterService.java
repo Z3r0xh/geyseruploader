@@ -37,14 +37,16 @@ public class UpdaterService {
     private static final String GEYSERMODELENGINE_GITHUB_API = "https://api.github.com/repos/xSquishyLiam/mc-GeyserModelEngine-plugin/releases/latest";
     private static final String FAWE_JENKINS = "https://ci.athion.net/job/FastAsyncWorldEdit";
     private static final String PLACEHOLDERAPI_GITHUB_API = "https://api.github.com/repos/PlaceholderAPI/PlaceholderAPI";
-    private static final String ITEMNBTAPI_GITHUB_API = "https://api.github.com/repos/tr7zw/Item-NBT-API";
+    private static final String ITEMNBTAPI_JENKINS = "https://ci.codemc.io/job/Tr7zw/job/Item-NBT-API";
     private final HttpClient http;
     private final LogAdapter log;
     private final Config cfg;
+    private final UpdateHistoryLogger historyLogger;
 
-    public UpdaterService(LogAdapter log, Config cfg) {
+    public UpdaterService(LogAdapter log, Config cfg, Path dataDirectory) {
         this.log = log;
         this.cfg = cfg;
+        this.historyLogger = new UpdateHistoryLogger(dataDirectory, cfg);
         this.http = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .connectTimeout(Duration.ofSeconds(15))
@@ -83,9 +85,21 @@ public class UpdaterService {
             return Collections.singletonList(new UpdateOutcome(Project.GEYSER, false, false,
                     Optional.of("No targets enabled")));
         }
+
+        // Log the check if configured
+        historyLogger.logCheck("Starting update check for " + targets.size() + " plugin(s)");
+
         List<UpdateOutcome> results = new ArrayList<>();
         for (Project p : targets) {
-            results.add(updateOne(p, platform, pluginsDir));
+            UpdateOutcome outcome = updateOne(p, platform, pluginsDir);
+            results.add(outcome);
+
+            // Log the outcome
+            if (outcome.updated) {
+                historyLogger.logUpdate(p, outcome.oldVersion, outcome.newVersion);
+            } else if (outcome.error.isPresent()) {
+                historyLogger.logError(p, outcome.error.get());
+            }
         }
 
         // Send Discord notifications if enabled
@@ -116,6 +130,183 @@ public class UpdaterService {
         }
 
         return results;
+    }
+
+    /**
+     * Get detailed information about a specific plugin's update rules and current status
+     */
+    public PluginInfo getPluginInfo(Project project, Platform platform, Path pluginsDir) {
+        PluginInfo.Builder builder = new PluginInfo.Builder(project);
+
+        // Check if enabled
+        boolean enabled = isProjectEnabled(project);
+        builder.enabled(enabled);
+
+        // Determine download source
+        String downloadSource = getDownloadSourceDescription(project, platform);
+        builder.downloadSource(downloadSource);
+
+        // Determine installation location
+        String installLocation = project.isGeyserExtension()
+            ? "Geyser extensions folder (plugins/Geyser-*/extensions/)"
+            : "Plugins folder (plugins/)";
+        builder.installLocation(installLocation);
+
+        // Add file search patterns
+        builder.addFileSearchPattern("File hint: " + project.fileHint());
+
+        // Add special rules
+        addSpecialRules(builder, project, platform);
+
+        // Get version information if enabled
+        if (enabled) {
+            try {
+                // Determine search directory
+                Path searchDir = pluginsDir;
+                if (project.isGeyserExtension()) {
+                    try {
+                        Path extensionsDir = findGeyserExtensionsFolder(platform, pluginsDir);
+                        if (extensionsDir != null) {
+                            searchDir = extensionsDir;
+                        }
+                    } catch (IOException e) {
+                        builder.error(Optional.of("Geyser folder not found. Make sure Geyser is installed."));
+                        return builder.build();
+                    }
+                }
+
+                // Find installed version
+                Path existing = findExistingJar(project, searchDir);
+                String installedVersion = existing != null ? existing.getFileName().toString() : null;
+                builder.installedVersion(Optional.ofNullable(installedVersion));
+
+                // Get local file modification time if exists
+                if (existing != null) {
+                    try {
+                        long localModified = java.nio.file.Files.getLastModifiedTime(existing).toMillis();
+                        String formattedDate = formatTimestamp(localModified);
+                        builder.localFileModified(Optional.of(formattedDate));
+                    } catch (Exception e) {
+                        // Ignore
+                    }
+                }
+
+                // Get latest version
+                String latestVersion = getLatestVersionString(project, platform);
+                builder.latestVersion(Optional.of(latestVersion));
+
+                // Try to get build information from API
+                try {
+                    BuildInfo buildInfo = getBuildInfo(project);
+                    if (buildInfo != null) {
+                        if (buildInfo.timestamp != null) {
+                            builder.latestBuildTime(Optional.of(formatTimestamp(buildInfo.timestamp)));
+                        }
+                        if (buildInfo.buildNumber != null) {
+                            builder.buildNumber(Optional.of(buildInfo.buildNumber));
+                        }
+                    }
+                } catch (Exception e) {
+                    // Build info not available, that's okay
+                }
+
+                // Check if update is available
+                if (installedVersion != null) {
+                    String normalizedInstalled = normalizeFilename(installedVersion);
+                    String normalizedLatest = normalizeFilename(latestVersion);
+                    boolean updateAvailable = isUpdateAvailable(normalizedInstalled, normalizedLatest, project);
+                    builder.updateAvailable(updateAvailable);
+                }
+
+            } catch (Exception e) {
+                builder.error(Optional.of(e.getMessage()));
+            }
+        }
+
+        return builder.build();
+    }
+
+    private String getDownloadSourceDescription(Project project, Platform platform) {
+        if (project == Project.GEYSER || project == Project.FLOODGATE) {
+            return "GeyserMC Download API";
+        } else if (project == Project.THIRDPARTYCOSMETICS_EXTENSION || project == Project.EMOTEOFFHAND_EXTENSION) {
+            return "GeyserMC Download API (static filename)";
+        } else if (project.isLuckPerms()) {
+            return "LuckPerms Metadata API";
+        } else if (project == Project.PACKETEVENTS) {
+            if (cfg.targets.packetevents.useDevBuilds) {
+                return "Jenkins CI (ci.codemc.io)";
+            } else {
+                return "GitHub Releases (retrooper/packetevents)";
+            }
+        } else if (project == Project.FAWE) {
+            return "Jenkins CI (ci.athion.net)";
+        } else if (project == Project.PLACEHOLDERAPI) {
+            return "GitHub Releases (PlaceholderAPI/PlaceholderAPI)";
+        } else if (project == Project.ITEMNBTAPI) {
+            return "Jenkins CI (ci.codemc.io)";
+        } else if (project == Project.PROTOCOLLIB) {
+            return "GitHub Releases (dmulloy2/ProtocolLib)";
+        } else if (project == Project.VIAVERSION || project == Project.VIABACKWARDS ||
+                   project == Project.VIAREWIND || project == Project.VIAREWIND_LEGACY) {
+            return "GitHub Releases (ViaVersion repositories)";
+        } else if (project.isGeyserExtension() || project.isGeyserRelatedPlugin()) {
+            return "GitHub Releases (GeyserMC repositories)";
+        }
+        return "Unknown source";
+    }
+
+    private void addSpecialRules(PluginInfo.Builder builder, Project project, Platform platform) {
+        // Version comparison rules
+        if (project == Project.GEYSER || project == Project.FLOODGATE) {
+            builder.addSpecialRule("Version check: Uses timestamp comparison");
+            builder.addSpecialRule("Static filename: Always overwrites with latest build");
+        } else if (project == Project.THIRDPARTYCOSMETICS_EXTENSION || project == Project.EMOTEOFFHAND_EXTENSION) {
+            builder.addSpecialRule("Static filename: No version number in filename");
+            builder.addSpecialRule("Update detection: Always assumes latest is available");
+        } else if (project == Project.FAWE) {
+            builder.addSpecialRule("SNAPSHOT builds: Compares build numbers (e.g., 1229 vs 1231)");
+        } else {
+            builder.addSpecialRule("Version comparison: Semantic versioning (x.y.z)");
+        }
+
+        // Filename normalization
+        builder.addSpecialRule("Removes browser download suffixes: (1), (2), etc.");
+
+        // Platform-specific rules
+        if (project == Project.FAWE && platform != Platform.SPIGOT) {
+            builder.addSpecialRule("Platform restriction: Only available for Spigot");
+        }
+        if (project == Project.PLACEHOLDERAPI && platform != Platform.SPIGOT) {
+            builder.addSpecialRule("Platform restriction: Only available for Spigot");
+        }
+        if (project == Project.ITEMNBTAPI && platform != Platform.SPIGOT) {
+            builder.addSpecialRule("Platform restriction: Only available for Spigot");
+        }
+
+        // Extension-specific rules
+        if (project.isGeyserExtension()) {
+            builder.addSpecialRule("Dependency: Requires Geyser to be installed and enabled");
+        }
+
+        // GeyserModelEngine specific rules
+        if (project == Project.GEYSERMODELENGINE_EXTENSION && cfg.targets.geyserExtensions.geyserModelEngineExtension.cleanOnUpdate) {
+            builder.addSpecialRule("Clean on update: Deletes old extension folder before update");
+        }
+
+        // PacketEvents Jenkins rule
+        if (project == Project.PACKETEVENTS) {
+            if (cfg.targets.packetevents.useDevBuilds) {
+                builder.addSpecialRule("Source: Using Jenkins CI builds (development builds)");
+            } else {
+                builder.addSpecialRule("Source: Using GitHub releases (stable releases)");
+            }
+        }
+
+        // ProtocolLib dev builds
+        if (project == Project.PROTOCOLLIB && cfg.targets.protocollib.useDevBuilds) {
+            builder.addSpecialRule("Dev builds enabled: Using dev-build tag instead of latest release");
+        }
     }
 
     private VersionInfo checkVersionForProject(Project project, Platform platform, Path pluginsDir) {
@@ -152,8 +343,22 @@ public class UpdaterService {
             // Get latest version URL (don't download, just check)
             String latestVersion = getLatestVersionString(project, platform);
 
+            // Try to get build number for Jenkins builds
+            String buildNumber = null;
+            try {
+                BuildInfo buildInfo = getBuildInfo(project);
+                if (buildInfo != null && buildInfo.buildNumber != null) {
+                    buildNumber = buildInfo.buildNumber;
+                }
+            } catch (Exception e) {
+                // Build info not available, that's okay
+            }
+
             // Compare versions
             if (installedVersion == null) {
+                if (buildNumber != null) {
+                    return VersionInfo.notInstalled(project, latestVersion, buildNumber);
+                }
                 return VersionInfo.notInstalled(project, latestVersion);
             }
 
@@ -161,12 +366,68 @@ public class UpdaterService {
             String normalizedInstalled = normalizeFilename(installedVersion);
             String normalizedLatest = normalizeFilename(latestVersion);
 
+            // For plugins with static filenames (Geyser, Floodgate, extensions), we need timestamp comparison
+            if (usesStaticFilename(project)) {
+                // Download temporarily to compare file modification times
+                try {
+                    boolean hasUpdate = checkStaticFilenameUpdate(project, platform, existing, pluginsDir);
+                    if (hasUpdate) {
+                        if (buildNumber != null) {
+                            return VersionInfo.updateAvailable(project, installedVersion, latestVersion, buildNumber);
+                        }
+                        return VersionInfo.updateAvailable(project, installedVersion, latestVersion);
+                    } else {
+                        if (buildNumber != null) {
+                            return VersionInfo.upToDate(project, installedVersion, latestVersion, buildNumber);
+                        }
+                        return VersionInfo.upToDate(project, installedVersion, latestVersion);
+                    }
+                } catch (Exception e) {
+                    // If we can't determine, default to up-to-date to avoid false positives
+                    if (buildNumber != null) {
+                        return VersionInfo.upToDate(project, installedVersion, latestVersion, buildNumber);
+                    }
+                    return VersionInfo.upToDate(project, installedVersion, latestVersion);
+                }
+            }
+
             // Check if update is available by comparing normalized version strings
             boolean updateAvailable = isUpdateAvailable(normalizedInstalled, normalizedLatest, project);
 
+            // For GitHub projects that might use static filenames, verify with timestamp even if names match
+            if (!updateAvailable && needsTimestampVerification(project)) {
+                // Names are the same, but verify with timestamp to be sure
+                try {
+                    boolean hasUpdate = checkStaticFilenameUpdate(project, platform, existing, pluginsDir);
+                    if (hasUpdate) {
+                        if (buildNumber != null) {
+                            return VersionInfo.updateAvailable(project, installedVersion, latestVersion, buildNumber);
+                        }
+                        return VersionInfo.updateAvailable(project, installedVersion, latestVersion);
+                    } else {
+                        if (buildNumber != null) {
+                            return VersionInfo.upToDate(project, installedVersion, latestVersion, buildNumber);
+                        }
+                        return VersionInfo.upToDate(project, installedVersion, latestVersion);
+                    }
+                } catch (Exception e) {
+                    // If we can't determine, default to up-to-date to avoid false positives
+                    if (buildNumber != null) {
+                        return VersionInfo.upToDate(project, installedVersion, latestVersion, buildNumber);
+                    }
+                    return VersionInfo.upToDate(project, installedVersion, latestVersion);
+                }
+            }
+
             if (updateAvailable) {
+                if (buildNumber != null) {
+                    return VersionInfo.updateAvailable(project, installedVersion, latestVersion, buildNumber);
+                }
                 return VersionInfo.updateAvailable(project, installedVersion, latestVersion);
             } else {
+                if (buildNumber != null) {
+                    return VersionInfo.upToDate(project, installedVersion, latestVersion, buildNumber);
+                }
                 return VersionInfo.upToDate(project, installedVersion, latestVersion);
             }
         } catch (Exception e) {
@@ -331,6 +592,135 @@ public class UpdaterService {
         return !installed.equalsIgnoreCase(latest);
     }
 
+    /**
+     * Check if a project uses a static filename (same filename for all versions)
+     * OR if it's a GitHub project that might use static filenames
+     */
+    private boolean usesStaticFilename(Project project) {
+        return project == Project.GEYSER ||
+               project == Project.FLOODGATE ||
+               project == Project.THIRDPARTYCOSMETICS_EXTENSION ||
+               project == Project.EMOTEOFFHAND_EXTENSION;
+    }
+
+    /**
+     * Check if a project is from GitHub and might need timestamp verification
+     * even when filenames match (in case they haven't updated version in filename)
+     *
+     * PacketEvents: Mantiene el mismo nombre durante varias versiones (ej: 2.11.1 por 5 versiones)
+     * GeyserUtils/GeyserModelEngine: Pueden no actualizar la versión en el nombre
+     */
+    private boolean needsTimestampVerification(Project project) {
+        return project == Project.GEYSERUTILS_EXTENSION ||
+               project == Project.GEYSERUTILS_PLUGIN ||
+               project == Project.GEYSERMODELENGINE_EXTENSION ||
+               project == Project.GEYSERMODELENGINE_PLUGIN ||
+               project == Project.PACKETEVENTS;
+    }
+
+    /**
+     * Check if an update is available for plugins with static filenames by comparing timestamps
+     * Downloads the remote file temporarily and compares modification times
+     */
+    private boolean checkStaticFilenameUpdate(Project project, Platform platform, Path existing, Path pluginsDir) throws IOException {
+        // For Jenkins builds, compare using build info (timestamp and build number) instead of downloading
+        boolean isJenkinsBuild = isJenkinsProject(project);
+
+        if (isJenkinsBuild) {
+            return checkJenkinsBuildUpdate(project, existing);
+        }
+
+        // Get download URL
+        String downloadUrl = buildDownloadUrl(project, platform);
+
+        // Create temp directory inside zPluginUpdater plugin folder
+        Path tempDir = pluginsDir.resolve("zPluginUpdater").resolve("temp");
+        Files.createDirectories(tempDir);
+
+        // Download to temporary file in plugin's temp folder
+        Path tmp = tempDir.resolve("check-" + project.name() + "-" + System.currentTimeMillis() + ".jar");
+
+        try {
+            HttpRequest req = createRequestBuilder(downloadUrl)
+                    .timeout(Duration.ofSeconds(30))
+                    .GET()
+                    .build();
+
+            HttpResponse<Path> resp = http.send(req, HttpResponse.BodyHandlers.ofFile(tmp));
+
+            if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
+                throw new IOException("HTTP " + resp.statusCode());
+            }
+
+            // Compare file sizes first
+            long existingSize = Files.size(existing);
+            long newSize = Files.size(tmp);
+
+            if (existingSize != newSize) {
+                // Different size = different version = update available
+                return true;
+            }
+
+            // Same size - try to verify with GitHub API timestamp
+            // NOTE: File modification timestamps of downloaded files are unreliable
+            // because they reflect when the file was downloaded, not when it was published
+
+            // For projects with GitHub API, use published_at timestamp
+            Long githubPublished = getGitHubReleaseTimestamp(project);
+
+            if (githubPublished != null) {
+                long localModified = Files.getLastModifiedTime(existing).toMillis();
+                return githubPublished > localModified;
+            } else {
+                // For Geyser/Floodgate and extensions without GitHub API,
+                // if size is the same, we can't reliably determine if there's an update
+                // during /check command. Return false to avoid false positives.
+                // The actual update process will still work correctly.
+                return false;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        } finally {
+            // Clean up temporary file
+            Files.deleteIfExists(tmp);
+        }
+    }
+
+    /**
+     * Check if project uses Jenkins CI
+     */
+    private boolean isJenkinsProject(Project project) {
+        if (project == Project.PACKETEVENTS && cfg.targets.packetevents.enabled && cfg.targets.packetevents.useDevBuilds) {
+            return true;
+        }
+        return project == Project.FAWE || project == Project.ITEMNBTAPI ||
+               project == Project.VIAVERSION || project == Project.VIABACKWARDS ||
+               project == Project.VIAREWIND || project == Project.VIAREWIND_LEGACY;
+    }
+
+    /**
+     * Check for Jenkins build updates by comparing build timestamps and numbers
+     */
+    private boolean checkJenkinsBuildUpdate(Project project, Path existing) throws IOException {
+        try {
+            BuildInfo latestBuild = getBuildInfo(project);
+            if (latestBuild == null || latestBuild.timestamp == null) {
+                // Can't determine, assume no update to avoid false positives
+                return false;
+            }
+
+            long localModified = Files.getLastModifiedTime(existing).toMillis();
+
+            // Compare timestamps: if latest build is newer than local file, update is available
+            return latestBuild.timestamp > localModified;
+        } catch (IOException e) {
+            // If we can't get build info, assume no update to avoid false positives
+            log.warn("Could not fetch Jenkins build info for " + project.apiName() + ": " + e.getMessage());
+            return false;
+        }
+    }
+
     private List<Project> collectTargets(Platform platform) {
         List<Project> targets = new ArrayList<>();
         if (cfg.targets.geyser) targets.add(Project.GEYSER);
@@ -453,11 +843,11 @@ public class UpdaterService {
                                 Long githubPublished = getGitHubReleaseTimestamp(project);
 
                                 if (githubPublished != null && githubPublished > localModified) {
-                                    log.info(ANSI_YELLOW + project.apiName() + " has same size but GitHub release is newer - updating" + ANSI_RESET);
+                                    log.info(ANSI_YELLOW + project.apiName() + " has same size but API release is newer - updating" + ANSI_RESET);
                                     // Continue with update
                                 } else {
                                     Files.deleteIfExists(tmp);
-                                    log.info(ANSI_GREEN + project.apiName() + " is up to date (verified by GitHub timestamp)" + ANSI_RESET);
+                                    log.info(ANSI_GREEN + project.apiName() + " is up to date (verified by API timestamp)" + ANSI_RESET);
                                     return new UpdateOutcome(project, false, true, Optional.empty());
                                 }
                             } catch (Exception e) {
@@ -475,6 +865,26 @@ public class UpdaterService {
                         log.info(ANSI_GREEN + project.apiName() + " is already up to date (filename and size match)" + ANSI_RESET);
                         return new UpdateOutcome(project, false, true, Optional.empty());
                     } else {
+                        // For Jenkins builds, small size differences may not indicate a real update
+                        // Jenkins can rebuild with slightly different sizes even without code changes
+                        boolean isJenkinsBuild = (project == Project.PACKETEVENTS && cfg.targets.packetevents.useDevBuilds) ||
+                                                 (project == Project.PROTOCOLLIB && cfg.targets.protocollib.useDevBuilds);
+
+                        if (isJenkinsBuild) {
+                            // Calculate percentage difference
+                            long diff = Math.abs(newSize - existingSize);
+                            double percentDiff = (diff * 100.0) / existingSize;
+
+                            if (percentDiff < 5.0) {
+                                // Less than 5% difference - likely just Jenkins rebuild, skip update
+                                Files.deleteIfExists(tmp);
+                                log.info(ANSI_GREEN + project.apiName() + " size difference is minor (" +
+                                        String.format("%.2f%%", percentDiff) + ": " + existingSize + " -> " + newSize +
+                                        " bytes), likely Jenkins rebuild - skipping update" + ANSI_RESET);
+                                return new UpdateOutcome(project, false, true, Optional.empty());
+                            }
+                        }
+
                         log.info(ANSI_YELLOW + project.apiName() + " has an update (same filename but different size: " + existingSize + " -> " + newSize + " bytes)" + ANSI_RESET);
                         // Continue with update
                     }
@@ -947,7 +1357,8 @@ public class UpdaterService {
             if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
                 String body = resp.body();
                 String artifactFileName = extractViaPluginArtifact(body, project);
-                return jenkinsUrl + "/lastSuccessfulBuild/artifact/build/libs/" + artifactFileName;
+                String downloadUrl = jenkinsUrl + "/lastSuccessfulBuild/artifact/build/libs/" + artifactFileName;
+                return downloadUrl;
             } else {
                 throw new IOException("HTTP " + resp.statusCode() + " when fetching " + project.name() + " Jenkins API");
             }
@@ -959,7 +1370,6 @@ public class UpdaterService {
 
     private String extractViaPluginArtifact(String json, Project project) throws IOException {
         // Look for artifact fileName in the Jenkins API response
-        // The artifact name varies but should contain the project name
         String searchPattern = "\"fileName\":\"";
         int startIndex = json.indexOf(searchPattern);
 
@@ -969,8 +1379,12 @@ public class UpdaterService {
             if (endIndex == -1) break;
 
             String fileName = json.substring(startIndex, endIndex);
-            // Check if this is the JAR file we want
-            if (fileName.endsWith(".jar") && !fileName.contains("javadoc") && !fileName.contains("sources")) {
+
+            // ViaVersion projects only produce one main JAR artifact
+            // Just exclude javadoc and sources, and return the first match
+            if (fileName.endsWith(".jar") &&
+                !fileName.contains("-javadoc") &&
+                !fileName.contains("-sources")) {
                 return fileName;
             }
 
@@ -1075,8 +1489,8 @@ public class UpdaterService {
     }
 
     private String getItemNBTAPIUrl() throws IOException {
-        // Fetch GitHub API to get releases with assets
-        String apiUrl = ITEMNBTAPI_GITHUB_API + "/releases";
+        // Fetch Jenkins API to get artifact name
+        String apiUrl = ITEMNBTAPI_JENKINS + "/lastSuccessfulBuild/api/json";
         HttpRequest req = createRequestBuilder(apiUrl)
                 .timeout(Duration.ofSeconds(15))
                 .GET()
@@ -1085,10 +1499,10 @@ public class UpdaterService {
             HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
                 String body = resp.body();
-                // Find first release with "item-nbt-api-plugin-*.jar" asset
-                return extractItemNBTAPIAsset(body);
+                String artifactFileName = extractItemNBTAPIJenkinsArtifact(body);
+                return ITEMNBTAPI_JENKINS + "/lastSuccessfulBuild/artifact/item-nbt-plugin/target/" + artifactFileName;
             } else {
-                throw new IOException("HTTP " + resp.statusCode() + " when fetching ItemNBTAPI releases");
+                throw new IOException("HTTP " + resp.statusCode() + " when fetching ItemNBTAPI Jenkins API");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -1096,46 +1510,28 @@ public class UpdaterService {
         }
     }
 
-    private String extractItemNBTAPIAsset(String json) throws IOException {
-        // Parse releases array to find first (latest) release with "item-nbt-api-plugin-*.jar" asset
-        // GitHub returns releases in descending order (newest first)
+    private String extractItemNBTAPIJenkinsArtifact(String json) throws IOException {
+        // Parse Jenkins API response to find the plugin JAR artifact
+        String searchPattern = "\"fileName\":\"";
+        int pos = json.indexOf(searchPattern);
 
-        // Split by releases (each release starts with "tag_name")
-        String[] releaseParts = json.split("\"tag_name\"");
+        while (pos != -1) {
+            int fileNameStart = pos + searchPattern.length();
+            int fileNameEnd = json.indexOf("\"", fileNameStart);
+            if (fileNameEnd == -1) break;
 
-        for (int i = 1; i < releaseParts.length; i++) {
-            String releasePart = releaseParts[i];
+            String fileName = json.substring(fileNameStart, fileNameEnd);
 
-            // Check if this release has assets
-            if (!releasePart.contains("\"assets\"")) continue;
-
-            // Find the assets section for this release
-            int assetsStart = releasePart.indexOf("\"assets\"");
-            int nextReleaseOrEnd = releasePart.length();
-            String assetsSection = releasePart.substring(assetsStart, nextReleaseOrEnd);
-
-            // Look for browser_download_url in this release's assets
-            String searchPattern = "\"browser_download_url\":\"";
-            int urlPos = assetsSection.indexOf(searchPattern);
-
-            while (urlPos != -1) {
-                int urlStart = urlPos + searchPattern.length();
-                int urlEnd = assetsSection.indexOf("\"", urlStart);
-                if (urlEnd == -1) break;
-
-                String url = assetsSection.substring(urlStart, urlEnd);
-
-                // Check if this is the plugin JAR we want
-                if (url.contains("item-nbt-api-plugin-") && url.endsWith(".jar")) {
-                    return url;
-                }
-
-                // Continue searching in this release
-                urlPos = assetsSection.indexOf(searchPattern, urlEnd);
+            // Look for item-nbt-api-plugin JAR (not javadoc, sources, or API jar)
+            if (fileName.startsWith("item-nbt-api-plugin-") && fileName.endsWith(".jar") &&
+                !fileName.contains("-javadoc") && !fileName.contains("-sources")) {
+                return fileName;
             }
+
+            pos = json.indexOf(searchPattern, fileNameEnd);
         }
 
-        throw new IOException("Could not find ItemNBTAPI plugin JAR in any release with assets");
+        throw new IOException("Could not find ItemNBTAPI plugin JAR in Jenkins artifacts");
     }
 
     private Path findGeyserExtensionsFolder(Platform platform, Path pluginsDir) throws IOException {
@@ -1428,8 +1824,18 @@ public class UpdaterService {
      * Create an HTTP request builder with standard headers
      */
     private HttpRequest.Builder createRequestBuilder(String url) {
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
-                .header("User-Agent", USER_AGENT);
+        // Add cache-busting parameter for API URLs to prevent aggressive ISP/proxy caching
+        String finalUrl = url;
+        if (url.contains("/api/json") || url.contains("api.github.com") || url.contains("api.geysermc.org")) {
+            String separator = url.contains("?") ? "&" : "?";
+            finalUrl = url + separator + "_cachebust=" + System.currentTimeMillis();
+        }
+
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(finalUrl))
+                .header("User-Agent", USER_AGENT)
+                .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                .header("Pragma", "no-cache")
+                .header("Expires", "0");
 
         // Add GitHub token if configured (for GitHub API requests)
         if (cfg.githubToken != null && !cfg.githubToken.trim().isEmpty() && url.contains("api.github.com")) {
@@ -1503,10 +1909,17 @@ public class UpdaterService {
     }
 
     /**
-     * Get the published_at timestamp of the latest GitHub release for a project
+     * Get the published timestamp of the latest release for a project
      * Returns timestamp in milliseconds, or null if not available
      */
     private Long getGitHubReleaseTimestamp(Project project) throws IOException {
+        // For Geyser/Floodgate/ThirdPartyCosmetics/EmoteOffhand, use GeyserMC API
+        if (project == Project.GEYSER || project == Project.FLOODGATE ||
+            project == Project.THIRDPARTYCOSMETICS_EXTENSION || project == Project.EMOTEOFFHAND_EXTENSION) {
+            return getGeyserMCReleaseTimestamp(project);
+        }
+
+        // For GitHub releases
         String apiUrl;
 
         switch (project) {
@@ -1517,6 +1930,13 @@ public class UpdaterService {
             case GEYSERMODELENGINE_EXTENSION:
             case GEYSERMODELENGINE_PLUGIN:
                 apiUrl = GEYSERMODELENGINE_GITHUB_API;
+                break;
+            case PACKETEVENTS:
+                // Only use GitHub API if not using dev builds (dev builds are on Jenkins)
+                if (cfg.targets.packetevents.enabled && cfg.targets.packetevents.useDevBuilds) {
+                    return null; // Jenkins builds don't have published_at timestamp
+                }
+                apiUrl = PACKETEVENTS_GITHUB_API;
                 break;
             default:
                 return null; // Not a GitHub release project
@@ -1557,6 +1977,72 @@ public class UpdaterService {
                     return java.time.Instant.parse(dateStr).toEpochMilli();
                 } catch (Exception e) {
                     log.warn(ANSI_YELLOW + "Failed to parse GitHub timestamp: " + dateStr + ANSI_RESET);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the build time timestamp from GeyserMC Download API
+     * Returns timestamp in milliseconds, or null if not available
+     */
+    private Long getGeyserMCReleaseTimestamp(Project project) throws IOException {
+        String apiUrl;
+
+        switch (project) {
+            case GEYSER:
+                apiUrl = GEYSER_BASE + "/geyser/versions/latest/builds/latest";
+                break;
+            case FLOODGATE:
+                apiUrl = GEYSER_BASE + "/floodgate/versions/latest/builds/latest";
+                break;
+            case THIRDPARTYCOSMETICS_EXTENSION:
+                apiUrl = GEYSER_BASE + "/thirdpartycosmetics/versions/latest/builds/latest";
+                break;
+            case EMOTEOFFHAND_EXTENSION:
+                apiUrl = GEYSER_BASE + "/emoteoffhand/versions/latest/builds/latest";
+                break;
+            default:
+                return null;
+        }
+
+        HttpRequest req = createRequestBuilder(apiUrl)
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                return extractGeyserMCTimestamp(resp.body());
+            }
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    /**
+     * Extract time timestamp from GeyserMC API JSON response
+     * Format: "time":"2025-12-12T12:00:00.000Z"
+     */
+    private Long extractGeyserMCTimestamp(String json) {
+        String searchPattern = "\"time\":\"";
+        int startPos = json.indexOf(searchPattern);
+
+        if (startPos != -1) {
+            int dateStart = startPos + searchPattern.length();
+            int dateEnd = json.indexOf("\"", dateStart);
+            if (dateEnd != -1) {
+                String dateStr = json.substring(dateStart, dateEnd);
+                try {
+                    // Parse ISO 8601 timestamp: "2025-12-12T12:00:00.000Z"
+                    return java.time.Instant.parse(dateStr).toEpochMilli();
+                } catch (Exception e) {
+                    log.warn(ANSI_YELLOW + "Failed to parse GeyserMC timestamp: " + dateStr + ANSI_RESET);
                 }
             }
         }
@@ -1637,28 +2123,11 @@ public class UpdaterService {
             case VIAREWIND_LEGACY:
                 filename = "ViaRewind-Legacy-Support.jar";
                 break;
-            case GEYSERUTILS_EXTENSION:
-                filename = "geyserutils-geyser.jar";
-                break;
-            case GEYSERUTILS_PLUGIN:
-                switch (platform) {
-                    case SPIGOT: filename = "geyserutils-spigot.jar"; break;
-                    case BUNGEECORD: filename = "geyserutils-bungee.jar"; break;
-                    case VELOCITY: filename = "geyserutils-velocity.jar"; break;
-                    default: filename = "geyserutils.jar";
-                }
-                break;
-            case GEYSERMODELENGINE_EXTENSION:
-                filename = "GeyserModelEngine-Extension.jar";
-                break;
             case THIRDPARTYCOSMETICS_EXTENSION:
                 filename = "ThirdPartyCosmetics.jar";
                 break;
             case EMOTEOFFHAND_EXTENSION:
                 filename = "EmoteOffhand.jar";
-                break;
-            case GEYSERMODELENGINE_PLUGIN:
-                filename = "GeyserModelEngine-Plugin.jar";
                 break;
             case FAWE:
                 filename = "FastAsyncWorldEdit.jar";
@@ -1675,5 +2144,231 @@ public class UpdaterService {
     private Path defaultDestination(Project project, Platform platform, Path pluginsDir) {
         String filename = getDefaultFilename(project, platform);
         return pluginsDir.resolve(filename);
+    }
+
+    /**
+     * Inner class to hold build information
+     */
+    private static class BuildInfo {
+        Long timestamp;
+        String buildNumber;
+
+        BuildInfo(Long timestamp, String buildNumber) {
+            this.timestamp = timestamp;
+            this.buildNumber = buildNumber;
+        }
+    }
+
+    /**
+     * Get build information (timestamp and build number) from API
+     */
+    private BuildInfo getBuildInfo(Project project) throws IOException {
+        // For Geyser/Floodgate/ThirdPartyCosmetics/EmoteOffhand, use GeyserMC API
+        if (project == Project.GEYSER || project == Project.FLOODGATE ||
+            project == Project.THIRDPARTYCOSMETICS_EXTENSION || project == Project.EMOTEOFFHAND_EXTENSION) {
+            return getGeyserMCBuildInfo(project);
+        }
+
+        // For Jenkins builds
+        if (project == Project.PACKETEVENTS && cfg.targets.packetevents.enabled && cfg.targets.packetevents.useDevBuilds) {
+            return getJenkinsBuildInfo(PACKETEVENTS_JENKINS);
+        }
+        if (project == Project.FAWE) {
+            return getJenkinsBuildInfo(FAWE_JENKINS);
+        }
+        if (project == Project.ITEMNBTAPI) {
+            return getJenkinsBuildInfo(ITEMNBTAPI_JENKINS);
+        }
+        if (project == Project.VIAVERSION) {
+            return getJenkinsBuildInfo(VIAVERSION_JENKINS);
+        }
+        if (project == Project.VIABACKWARDS) {
+            return getJenkinsBuildInfo(VIABACKWARDS_JENKINS);
+        }
+        if (project == Project.VIAREWIND) {
+            return getJenkinsBuildInfo(VIAREWIND_JENKINS);
+        }
+        if (project == Project.VIAREWIND_LEGACY) {
+            return getJenkinsBuildInfo(VIAREWIND_LEGACY_JENKINS);
+        }
+
+        // For GitHub releases
+        switch (project) {
+            case GEYSERUTILS_EXTENSION:
+            case GEYSERUTILS_PLUGIN:
+            case GEYSERMODELENGINE_EXTENSION:
+            case GEYSERMODELENGINE_PLUGIN:
+            case PACKETEVENTS:
+            case PROTOCOLLIB:
+                Long timestamp = getGitHubReleaseTimestamp(project);
+                return timestamp != null ? new BuildInfo(timestamp, null) : null;
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Get build information from GeyserMC API
+     */
+    private BuildInfo getGeyserMCBuildInfo(Project project) throws IOException {
+        String apiUrl;
+
+        switch (project) {
+            case GEYSER:
+                apiUrl = GEYSER_BASE + "/geyser/versions/latest/builds/latest";
+                break;
+            case FLOODGATE:
+                apiUrl = GEYSER_BASE + "/floodgate/versions/latest/builds/latest";
+                break;
+            case THIRDPARTYCOSMETICS_EXTENSION:
+                apiUrl = GEYSER_BASE + "/thirdpartycosmetics/versions/latest/builds/latest";
+                break;
+            case EMOTEOFFHAND_EXTENSION:
+                apiUrl = GEYSER_BASE + "/emoteoffhand/versions/latest/builds/latest";
+                break;
+            default:
+                return null;
+        }
+
+        HttpRequest req = createRequestBuilder(apiUrl)
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String json = resp.body();
+                Long timestamp = extractGeyserMCTimestamp(json);
+                String buildNumber = extractGeyserMCBuildNumber(json);
+                return new BuildInfo(timestamp, buildNumber);
+            }
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    /**
+     * Get build information from Jenkins CI
+     */
+    private BuildInfo getJenkinsBuildInfo(String jenkinsBaseUrl) throws IOException {
+        String apiUrl = jenkinsBaseUrl + "/lastSuccessfulBuild/api/json";
+
+        HttpRequest req = createRequestBuilder(apiUrl)
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+
+        try {
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                String json = resp.body();
+                Long timestamp = extractJenkinsTimestamp(json);
+                String buildNumber = extractJenkinsBuildNumber(json);
+                return new BuildInfo(timestamp, buildNumber);
+            }
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted", e);
+        }
+    }
+
+    /**
+     * Extract timestamp from Jenkins API JSON response
+     * Format: "timestamp":1733990400000
+     */
+    private Long extractJenkinsTimestamp(String json) {
+        String searchPattern = "\"timestamp\":";
+        int startPos = json.indexOf(searchPattern);
+
+        if (startPos != -1) {
+            int timestampStart = startPos + searchPattern.length();
+            int timestampEnd = json.indexOf(",", timestampStart);
+            if (timestampEnd == -1) {
+                timestampEnd = json.indexOf("}", timestampStart);
+            }
+            if (timestampEnd != -1) {
+                String timestampStr = json.substring(timestampStart, timestampEnd).trim();
+                try {
+                    return Long.parseLong(timestampStr);
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract build number from Jenkins API JSON response
+     * Format: "number":1234
+     */
+    private String extractJenkinsBuildNumber(String json) {
+        String searchPattern = "\"number\":";
+        int startPos = json.indexOf(searchPattern);
+
+        if (startPos != -1) {
+            int buildStart = startPos + searchPattern.length();
+            int buildEnd = json.indexOf(",", buildStart);
+            if (buildEnd == -1) {
+                buildEnd = json.indexOf("}", buildStart);
+            }
+            if (buildEnd != -1) {
+                String buildStr = json.substring(buildStart, buildEnd).trim();
+                return "#" + buildStr;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract build number from GeyserMC API JSON response
+     * Format: "build":1004
+     */
+    private String extractGeyserMCBuildNumber(String json) {
+        String searchPattern = "\"build\":";
+        int startPos = json.indexOf(searchPattern);
+
+        if (startPos != -1) {
+            int buildStart = startPos + searchPattern.length();
+            int buildEnd = json.indexOf(",", buildStart);
+            if (buildEnd == -1) {
+                buildEnd = json.indexOf("}", buildStart);
+            }
+            if (buildEnd != -1) {
+                String buildStr = json.substring(buildStart, buildEnd).trim();
+                return "#" + buildStr;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Format timestamp in milliseconds to readable date string using configured format
+     */
+    private String formatTimestamp(long timestampMillis) {
+        java.time.Instant instant = java.time.Instant.ofEpochMilli(timestampMillis);
+        java.time.ZonedDateTime zdt = instant.atZone(java.time.ZoneId.systemDefault());
+
+        // Use configured date format, fall back to default if invalid
+        String pattern = cfg.dateFormat;
+        if (pattern == null || pattern.isEmpty()) {
+            pattern = "yyyy-MM-dd HH:mm:ss";
+        }
+
+        try {
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern(pattern);
+            return zdt.format(formatter);
+        } catch (IllegalArgumentException e) {
+            // Invalid pattern, use default
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            return zdt.format(formatter);
+        }
     }
 }

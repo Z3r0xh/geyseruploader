@@ -1,7 +1,7 @@
 package org.pluginupdater.core;
 
 public class Config {
-    public static final int CURRENT_CONFIG_VERSION = 3;
+    public static final int CURRENT_CONFIG_VERSION = 1;
 
     public int configVersion = CURRENT_CONFIG_VERSION;
 
@@ -12,6 +12,19 @@ public class Config {
     // Optional GitHub token for increased API rate limits (5000/hour vs 60/hour)
     // Leave empty to use unauthenticated requests
     public String githubToken = "";
+
+    // Date format for displaying timestamps (Java SimpleDateFormat pattern)
+    public String dateFormat = "yyyy-MM-dd HH:mm:ss";
+
+    // Update history logging
+    public UpdateHistory updateHistory = new UpdateHistory();
+    public static class UpdateHistory {
+        public boolean enabled = true;  // Enable logging of all updates and actions to history.log
+        public boolean logChecks = false;  // Log every update check (can be verbose)
+        public boolean logUpdates = true;  // Log successful updates
+        public boolean logErrors = true;  // Log errors during updates
+        public int maxFileSizeMB = 10;  // Maximum log file size before rotation (in megabytes)
+    }
 
     public boolean checkOnStartup = true;
 
@@ -158,5 +171,26 @@ public class Config {
         public String versionCheckNotFound = "§e○ §f{project} §7- §eNot installed";
         public String versionCheckSummary = "§f{enabled} §7enabled §8|§r §e{updates} §7update(s) available";
         public String versionCheckFetching = "§7Fetching version information...";
+
+        // Info command messages
+        public String infoUsage = "§cUsage: /zpluginupdate-<platform> info <plugin>";
+        public String infoNotFound = "§cPlugin '§e{plugin}§c' not found. Use tab completion to see available plugins.";
+        public String infoHeader = "§e§l═══════════════════════════════════";
+        public String infoTitle = "§a§lPlugin Info: §f{plugin}";
+        public String infoFooter = "§e§l═══════════════════════════════════";
+        public String infoStatus = "§7Status: {status}";
+        public String infoStatusDisabled = "§8DISABLED";
+        public String infoStatusError = "§cERROR: {error}";
+        public String infoStatusNotInstalled = "§eNot installed";
+        public String infoStatusUpdateAvailable = "§eUpdate available";
+        public String infoStatusUpToDate = "§aUp to date";
+        public String infoInstalledVersion = "§7Installed: §f{version}";
+        public String infoLatestVersion = "§7Latest: §f{version}";
+        public String infoDownloadSource = "§7Download Source: §f{source}";
+        public String infoInstallLocation = "§7Install Location: §f{location}";
+        public String infoSearchPatterns = "§7File Search Patterns:";
+        public String infoSearchPattern = "  §8▪ §7{pattern}";
+        public String infoSpecialRules = "§7Special Rules:";
+        public String infoSpecialRule = "  §8▪ §7{rule}";
     }
 }

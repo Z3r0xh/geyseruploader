@@ -93,7 +93,7 @@ public class VelocityPluginUpdaterPlugin {
     public void onProxyShutdown(com.velocitypowered.api.event.proxy.ProxyShutdownEvent event) {
         // Execute cleanup on shutdown if marker exists
         Path pluginsDir = dataDir.getParent();
-        UpdaterService cleanupService = new UpdaterService(new VelocityLogger(), cfg);
+        UpdaterService cleanupService = createUpdaterService();
         cleanupService.executeCleanupOnShutdown(Platform.VELOCITY, pluginsDir);
     }
 
@@ -103,7 +103,7 @@ public class VelocityPluginUpdaterPlugin {
 
     private void runAsyncCheck(boolean manual, CommandSource sender, boolean isPeriodic) {
         proxy.getScheduler().buildTask(this, () -> {
-            UpdaterService service = new UpdaterService(new VelocityLogger(), cfg);
+            UpdaterService service = createUpdaterService();
             if (manual) {
                 send(sender, cfg.messages.prefix + cfg.messages.manualTriggered);
             } else {
@@ -137,7 +137,7 @@ public class VelocityPluginUpdaterPlugin {
         proxy.getScheduler().buildTask(this, () -> {
             send(sender, cfg.messages.prefix + cfg.messages.versionCheckFetching);
 
-            UpdaterService service = new UpdaterService(new VelocityLogger(), cfg);
+            UpdaterService service = createUpdaterService();
             Path pluginsDir = dataDir.getParent();
             List<org.pluginupdater.core.VersionInfo> versions = service.checkVersions(Platform.VELOCITY, pluginsDir);
 
@@ -188,6 +188,104 @@ public class VelocityPluginUpdaterPlugin {
         }).schedule();
     }
 
+    private void runPluginInfo(CommandSource sender, String pluginName) {
+        proxy.getScheduler().buildTask(this, () -> {
+            // Try to find the project by name
+            org.pluginupdater.core.Project project = null;
+            for (org.pluginupdater.core.Project p : org.pluginupdater.core.Project.values()) {
+                if (p.name().equalsIgnoreCase(pluginName) || p.fileHint().equalsIgnoreCase(pluginName)) {
+                    project = p;
+                    break;
+                }
+            }
+
+            if (project == null) {
+                send(sender, cfg.messages.prefix + cfg.messages.infoNotFound.replace("{plugin}", pluginName));
+                return;
+            }
+
+            // Get plugin info
+            UpdaterService service = createUpdaterService();
+            Path pluginsDir = dataDir.getParent();
+            org.pluginupdater.core.PluginInfo info = service.getPluginInfo(project, Platform.VELOCITY, pluginsDir);
+
+            // Display info
+            send(sender, "");
+            send(sender, cfg.messages.infoHeader);
+            send(sender, cfg.messages.infoTitle.replace("{plugin}", info.project.name()));
+            send(sender, cfg.messages.infoHeader);
+            send(sender, "");
+
+            // Status
+            String status;
+            if (!info.enabled) {
+                status = cfg.messages.infoStatusDisabled;
+            } else if (info.error.isPresent()) {
+                status = cfg.messages.infoStatusError.replace("{error}", info.error.get());
+            } else if (!info.installedVersion.isPresent()) {
+                status = cfg.messages.infoStatusNotInstalled;
+            } else if (info.updateAvailable) {
+                status = cfg.messages.infoStatusUpdateAvailable;
+            } else {
+                status = cfg.messages.infoStatusUpToDate;
+            }
+            send(sender, cfg.messages.infoStatus.replace("{status}", status));
+
+            // Versions
+            if (info.installedVersion.isPresent()) {
+                send(sender, cfg.messages.infoInstalledVersion.replace("{version}", info.installedVersion.get()));
+            }
+            if (info.latestVersion.isPresent()) {
+                send(sender, cfg.messages.infoLatestVersion.replace("{version}", info.latestVersion.get()));
+            }
+
+            send(sender, "");
+
+            // Build information (if available)
+            if (info.localFileModified.isPresent() || info.latestBuildTime.isPresent() || info.buildNumber.isPresent()) {
+                send(sender, "§7Build Information:");
+                if (info.localFileModified.isPresent()) {
+                    send(sender, "  §8▪ §7Local file modified: §f" + info.localFileModified.get());
+                }
+                if (info.latestBuildTime.isPresent()) {
+                    send(sender, "  §8▪ §7Latest build time: §f" + info.latestBuildTime.get());
+                }
+                if (info.buildNumber.isPresent()) {
+                    send(sender, "  §8▪ §7Build number: §f" + info.buildNumber.get());
+                }
+                send(sender, "");
+            }
+
+            // Download source
+            send(sender, cfg.messages.infoDownloadSource.replace("{source}", info.downloadSource));
+
+            // Installation location
+            send(sender, cfg.messages.infoInstallLocation.replace("{location}", info.installLocation));
+
+            // File search patterns
+            if (!info.fileSearchPatterns.isEmpty()) {
+                send(sender, "");
+                send(sender, cfg.messages.infoSearchPatterns);
+                for (String pattern : info.fileSearchPatterns) {
+                    send(sender, cfg.messages.infoSearchPattern.replace("{pattern}", pattern));
+                }
+            }
+
+            // Special rules
+            if (!info.specialRules.isEmpty()) {
+                send(sender, "");
+                send(sender, cfg.messages.infoSpecialRules);
+                for (String rule : info.specialRules) {
+                    send(sender, cfg.messages.infoSpecialRule.replace("{rule}", rule));
+                }
+            }
+
+            send(sender, "");
+            send(sender, cfg.messages.infoFooter);
+            send(sender, "");
+        }).schedule();
+    }
+
     private class UpdateCommand implements SimpleCommand {
         @Override
         public void execute(Invocation invocation) {
@@ -225,7 +323,7 @@ public class VelocityPluginUpdaterPlugin {
                         return;
                     }
                     proxy.getScheduler().buildTask(VelocityPluginUpdaterPlugin.this, () -> {
-                        UpdaterService service = new UpdaterService(new VelocityLogger(), cfg);
+                        UpdaterService service = createUpdaterService();
                         Path pluginsDir = dataDir.getParent();
                         boolean success = service.simulateGMEPGUpdate(Platform.VELOCITY, pluginsDir);
                         if (success) {
@@ -241,7 +339,7 @@ public class VelocityPluginUpdaterPlugin {
                         return;
                     }
                     proxy.getScheduler().buildTask(VelocityPluginUpdaterPlugin.this, () -> {
-                        UpdaterService service = new UpdaterService(new VelocityLogger(), cfg);
+                        UpdaterService service = createUpdaterService();
                         send(src, cfg.messages.prefix + "§7Sending Discord webhook test...");
                         boolean success = service.testDiscordWebhook();
                         if (success) {
@@ -258,7 +356,7 @@ public class VelocityPluginUpdaterPlugin {
                     }
                     proxy.getScheduler().buildTask(VelocityPluginUpdaterPlugin.this, () -> {
                         send(src, cfg.messages.prefix + "§7Sending version summary to Discord webhook...");
-                        UpdaterService service = new UpdaterService(new VelocityLogger(), cfg);
+                        UpdaterService service = createUpdaterService();
                         Path pluginsDir = dataDir.getParent();
                         List<org.pluginupdater.core.VersionInfo> versions = service.checkVersions(Platform.VELOCITY, pluginsDir);
 
@@ -266,6 +364,17 @@ public class VelocityPluginUpdaterPlugin {
                         notifier.notifyPeriodicCheck(versions);
                         send(src, cfg.messages.prefix + "§aVersion summary sent to Discord! Check your Discord channel.");
                     }).schedule();
+                    return;
+                } else if (args[0].equalsIgnoreCase("info")) {
+                    if (!src.hasPermission("zpluginupdater.command.info")) {
+                        send(src, cfg.messages.prefix + cfg.messages.noPermission);
+                        return;
+                    }
+                    if (args.length < 2) {
+                        send(src, cfg.messages.prefix + cfg.messages.infoUsage);
+                        return;
+                    }
+                    runPluginInfo(src, args[1]);
                     return;
                 }
             }
@@ -294,6 +403,20 @@ public class VelocityPluginUpdaterPlugin {
                 if ("packtest".startsWith(input)) completions.add("packtest");
                 if ("webhooktest".startsWith(input)) completions.add("webhooktest");
                 if ("summary".startsWith(input)) completions.add("summary");
+                if ("info".startsWith(input)) completions.add("info");
+
+                return completions;
+            } else if (args.length == 2 && args[0].equalsIgnoreCase("info")) {
+                // Tab complete plugin names for info command
+                List<String> completions = new java.util.ArrayList<>();
+                String input = args[1].toLowerCase();
+
+                for (org.pluginupdater.core.Project project : org.pluginupdater.core.Project.values()) {
+                    String name = project.name().toLowerCase();
+                    if (name.startsWith(input)) {
+                        completions.add(project.name());
+                    }
+                }
 
                 return completions;
             }
@@ -360,5 +483,9 @@ public class VelocityPluginUpdaterPlugin {
         @Override public void info(String msg) { logger.info(msg); }
         @Override public void warn(String msg) { logger.warning(msg); }
         @Override public void error(String msg, Throwable t) { logger.severe(msg + " : " + t.getMessage()); }
+    }
+
+    private UpdaterService createUpdaterService() {
+        return new UpdaterService(new VelocityLogger(), cfg, dataDir);
     }
 }

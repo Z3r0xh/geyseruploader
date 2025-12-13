@@ -62,7 +62,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
     public void onDisable() {
         // Execute cleanup on shutdown if marker exists
         Path pluginsDir = getDataFolder().toPath().getParent();
-        UpdaterService cleanupService = new UpdaterService(new SpigotLogger(), cfg);
+        UpdaterService cleanupService = createUpdaterService();
         cleanupService.executeCleanupOnShutdown(Platform.SPIGOT, pluginsDir);
     }
 
@@ -79,7 +79,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
 
     private void runAsyncCheck(boolean manual, CommandSender sender, boolean isPeriodic) {
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-            UpdaterService service = new UpdaterService(new SpigotLogger(), cfg);
+            UpdaterService service = createUpdaterService();
             if (manual) {
                 sendTo(sender, cfg.messages.prefix + cfg.messages.manualTriggered);
             } else {
@@ -114,7 +114,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             sendTo(sender, cfg.messages.prefix + cfg.messages.versionCheckFetching);
 
-            UpdaterService service = new UpdaterService(new SpigotLogger(), cfg);
+            UpdaterService service = createUpdaterService();
             Path pluginsDir = getDataFolder().toPath().getParent();
             List<org.pluginupdater.core.VersionInfo> versions = service.checkVersions(Platform.SPIGOT, pluginsDir);
 
@@ -161,6 +161,104 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                     .replace("{enabled}", String.valueOf(enabledCount))
                     .replace("{updates}", String.valueOf(updatesCount)));
             sendTo(sender, cfg.messages.versionCheckFooter);
+            sendTo(sender, "");
+        });
+    }
+
+    private void runPluginInfo(CommandSender sender, String pluginName) {
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            // Try to find the project by name
+            org.pluginupdater.core.Project project = null;
+            for (org.pluginupdater.core.Project p : org.pluginupdater.core.Project.values()) {
+                if (p.name().equalsIgnoreCase(pluginName) || p.fileHint().equalsIgnoreCase(pluginName)) {
+                    project = p;
+                    break;
+                }
+            }
+
+            if (project == null) {
+                sendTo(sender, cfg.messages.prefix + cfg.messages.infoNotFound.replace("{plugin}", pluginName));
+                return;
+            }
+
+            // Get plugin info
+            UpdaterService service = createUpdaterService();
+            Path pluginsDir = getDataFolder().toPath().getParent();
+            org.pluginupdater.core.PluginInfo info = service.getPluginInfo(project, Platform.SPIGOT, pluginsDir);
+
+            // Display info
+            sendTo(sender, "");
+            sendTo(sender, cfg.messages.infoHeader);
+            sendTo(sender, cfg.messages.infoTitle.replace("{plugin}", info.project.name()));
+            sendTo(sender, cfg.messages.infoHeader);
+            sendTo(sender, "");
+
+            // Status
+            String status;
+            if (!info.enabled) {
+                status = cfg.messages.infoStatusDisabled;
+            } else if (info.error.isPresent()) {
+                status = cfg.messages.infoStatusError.replace("{error}", info.error.get());
+            } else if (!info.installedVersion.isPresent()) {
+                status = cfg.messages.infoStatusNotInstalled;
+            } else if (info.updateAvailable) {
+                status = cfg.messages.infoStatusUpdateAvailable;
+            } else {
+                status = cfg.messages.infoStatusUpToDate;
+            }
+            sendTo(sender, cfg.messages.infoStatus.replace("{status}", status));
+
+            // Versions
+            if (info.installedVersion.isPresent()) {
+                sendTo(sender, cfg.messages.infoInstalledVersion.replace("{version}", info.installedVersion.get()));
+            }
+            if (info.latestVersion.isPresent()) {
+                sendTo(sender, cfg.messages.infoLatestVersion.replace("{version}", info.latestVersion.get()));
+            }
+
+            sendTo(sender, "");
+
+            // Build information (if available)
+            if (info.localFileModified.isPresent() || info.latestBuildTime.isPresent() || info.buildNumber.isPresent()) {
+                sendTo(sender, "§7Build Information:");
+                if (info.localFileModified.isPresent()) {
+                    sendTo(sender, "  §8▪ §7Local file modified: §f" + info.localFileModified.get());
+                }
+                if (info.latestBuildTime.isPresent()) {
+                    sendTo(sender, "  §8▪ §7Latest build time: §f" + info.latestBuildTime.get());
+                }
+                if (info.buildNumber.isPresent()) {
+                    sendTo(sender, "  §8▪ §7Build number: §f" + info.buildNumber.get());
+                }
+                sendTo(sender, "");
+            }
+
+            // Download source
+            sendTo(sender, cfg.messages.infoDownloadSource.replace("{source}", info.downloadSource));
+
+            // Installation location
+            sendTo(sender, cfg.messages.infoInstallLocation.replace("{location}", info.installLocation));
+
+            // File search patterns
+            if (!info.fileSearchPatterns.isEmpty()) {
+                sendTo(sender, "");
+                sendTo(sender, cfg.messages.infoSearchPatterns);
+                for (String pattern : info.fileSearchPatterns) {
+                    sendTo(sender, cfg.messages.infoSearchPattern.replace("{pattern}", pattern));
+                }
+            }
+
+            // Special rules
+            if (!info.specialRules.isEmpty()) {
+                sendTo(sender, "");
+                sendTo(sender, cfg.messages.infoSpecialRules);
+                for (String rule : info.specialRules) {
+                    sendTo(sender, cfg.messages.infoSpecialRule.replace("{rule}", rule));
+                }
+            }
+
+            sendTo(sender, "");
+            sendTo(sender, cfg.messages.infoFooter);
             sendTo(sender, "");
         });
     }
@@ -240,7 +338,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                     return true;
                 }
                 Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-                    UpdaterService service = new UpdaterService(new SpigotLogger(), cfg);
+                    UpdaterService service = createUpdaterService();
                     Path pluginsDir = getDataFolder().toPath().getParent();
                     boolean success = service.simulateGMEPGUpdate(Platform.SPIGOT, pluginsDir);
                     if (success) {
@@ -256,7 +354,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                     return true;
                 }
                 Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-                    UpdaterService service = new UpdaterService(new SpigotLogger(), cfg);
+                    UpdaterService service = createUpdaterService();
                     sender.sendMessage(cfg.messages.prefix + "§7Sending Discord webhook test...");
                     boolean success = service.testDiscordWebhook();
                     if (success) {
@@ -273,7 +371,7 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                 }
                 Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
                     sender.sendMessage(cfg.messages.prefix + "§7Sending version summary to Discord webhook...");
-                    UpdaterService service = new UpdaterService(new SpigotLogger(), cfg);
+                    UpdaterService service = createUpdaterService();
                     Path pluginsDir = getDataFolder().toPath().getParent();
                     List<org.pluginupdater.core.VersionInfo> versions = service.checkVersions(Platform.SPIGOT, pluginsDir);
 
@@ -281,6 +379,17 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                     notifier.notifyPeriodicCheck(versions);
                     sender.sendMessage(cfg.messages.prefix + "§aVersion summary sent to Discord! Check your Discord channel.");
                 });
+                return true;
+            } else if (args[0].equalsIgnoreCase("info")) {
+                if (!sender.hasPermission("zpluginupdater.command.info")) {
+                    sender.sendMessage(cfg.messages.prefix + cfg.messages.noPermission);
+                    return true;
+                }
+                if (args.length < 2) {
+                    sender.sendMessage(cfg.messages.prefix + cfg.messages.infoUsage);
+                    return true;
+                }
+                runPluginInfo(sender, args[1]);
                 return true;
             }
         }
@@ -308,6 +417,20 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
             if ("packtest".startsWith(input)) completions.add("packtest");
             if ("webhooktest".startsWith(input)) completions.add("webhooktest");
             if ("summary".startsWith(input)) completions.add("summary");
+            if ("info".startsWith(input)) completions.add("info");
+
+            return completions;
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("info")) {
+            // Tab complete plugin names for info command
+            List<String> completions = new ArrayList<>();
+            String input = args[1].toLowerCase();
+
+            for (org.pluginupdater.core.Project project : org.pluginupdater.core.Project.values()) {
+                String name = project.name().toLowerCase();
+                if (name.startsWith(input)) {
+                    completions.add(project.name());
+                }
+            }
 
             return completions;
         }
@@ -336,7 +459,11 @@ public class SpigotPluginUpdaterPlugin extends JavaPlugin implements Listener {
                     getLogger().warning(cfg.messages.migrationScanFailed.replace("{error}", ex.getMessage()));
                 }
             }
-        
+
+    private UpdaterService createUpdaterService() {
+        return new UpdaterService(new SpigotLogger(), cfg, getDataFolder().toPath());
+    }
+
             private class SpigotLogger implements LogAdapter {
                 @Override public void info(String msg) { getLogger().info(msg); }
                 @Override public void warn(String msg) { getLogger().warning(msg); }
