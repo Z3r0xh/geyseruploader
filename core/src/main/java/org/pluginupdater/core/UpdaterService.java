@@ -1610,12 +1610,15 @@ public class UpdaterService {
 
             log.info(ANSI_YELLOW + "Cleanup marker detected, cleaning GeyserModelEngineExtension folder on shutdown..." + ANSI_RESET);
 
-            // Delete all files and folders except input/ and .jar files
+            // Delete all files and folders except input/, .jar files, and config.yml
             Files.list(gmepgFolder)
                 .filter(path -> {
                     String name = path.getFileName().toString();
-                    // Keep .jar files, .cleanup-pending marker (will be deleted at the end), and input/ folder
-                    return !name.endsWith(".jar") && !name.equals(".cleanup-pending") && !name.equals("input");
+                    // Keep .jar files, .cleanup-pending marker (will be deleted at the end), input/ folder, and config.yml
+                    return !name.endsWith(".jar")
+                        && !name.equals(".cleanup-pending")
+                        && !name.equals("input")
+                        && !name.equals("config.yml");
                 })
                 .forEach(path -> {
                     try {
